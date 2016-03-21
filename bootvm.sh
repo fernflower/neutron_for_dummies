@@ -1,5 +1,5 @@
 #!/bin/sh
-INT_NAME="mydemo"
+INT_NAME="mydemoroot"
 VM_NAME="vm"
 IMG="cirros-0.3.4-x86_64-uec"
 
