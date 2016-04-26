@@ -1,0 +1,36 @@
+- apt: update-cache=yes
+  sudo: yes
+
+- name: install system dependencies
+  apt: name={{item}} state=latest
+  with_items:
+      - git
+      - git-review
+  sudo: yes
+
+- name: checkout devstack repo
+  git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no
+
+- name: checkout neutron_for_dummies (just in case)
+  git: repo=https://github.com/fernflower/neutron_for_dummies.git dest="{{project_dir}}/neutron_for_dummies" update=no
+
+- name: checkout neutron repo
+  git: repo=https://github.com/openstack/neutron.git update=no dest={{project_dir}}/neutron
+
+- name: copy localrc to devstack dir
+  command: cp "{{project_dir}}/neutron_for_dummies/localrc" "{{project_dir}}/devstack/localrc"
+
+- name: check for devstack screen session
+  shell: screen -list stack | awk '$0~/No Sockets found/{print "no session"}'
+  register: screen_session_exists
+
+- name: run stack.sh
+  shell: bash "{{project_dir}}/devstack/stack.sh"
+  when: screen_session_exists == "no session"
+
+- name: configure for functional testing
+  shell: bash "{{project_dir}}/neutron/tools/configure_for_func_testing.sh" "{{project_dir}}/devstack" -i
+  environment: 
+      # FIXME should be taken from localrc
+      DATABASE_PASSWORD: "secret"
+      MYSQL_PASSWORD: "secret"
