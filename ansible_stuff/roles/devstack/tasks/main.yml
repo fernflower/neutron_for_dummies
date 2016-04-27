@@ -6,7 +6,12 @@
   with_items:
       - git
       - git-review
+      - ack-grep
+      - python2.7
+      - language-pack-ru
   sudo: yes
+
+# FIXME add python3.4 altinstall
 
 - name: checkout devstack repo
   git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no
@@ -20,17 +25,26 @@
 - name: copy localrc to devstack dir
   command: cp "{{project_dir}}/neutron_for_dummies/localrc" "{{project_dir}}/devstack/localrc"
 
+- name: verify ADMIN_PASSWORD is set in localrc
+  shell: grep "ADMIN_PASSWORD=" "{{project_dir}}/devstack/localrc"
+  register: check_password_set
+  always_run: True
+  changed_when: False
+
+- name: echo devstack admin password
+  shell: echo "{{check_password_set.stdout}}"| cut -d'=' -f2
+  register: devstack_admin_pass
+
 - name: check for devstack screen session
-  shell: screen -list stack | awk '$0~/No Sockets found/{print "no session"}'
+  shell: screen -ls stack | awk '$0~/No Sockets found/{print "no session"}'
   register: screen_session_exists
 
 - name: run stack.sh
   shell: bash "{{project_dir}}/devstack/stack.sh"
-  when: screen_session_exists == "no session"
+  when: screen_session_exists.stdout == "no session"
 
 - name: configure for functional testing
   shell: bash "{{project_dir}}/neutron/tools/configure_for_func_testing.sh" "{{project_dir}}/devstack" -i
   environment: 
-      # FIXME should be taken from localrc
-      DATABASE_PASSWORD: "secret"
-      MYSQL_PASSWORD: "secret"
+      DATABASE_PASSWORD: "{{devstack_admin_pass}}"
+      MYSQL_PASSWORD: "{{devstack_admin_pass}}"
