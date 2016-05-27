@@ -9,9 +9,22 @@
       - ack-grep
       - python2.7
       - language-pack-ru
+      - vim
   sudo: yes
 
 # FIXME add python3.4 altinstall
+
+- name: clone repo with nice vim config
+  git: repo=https://github.com/fernflower/vim-quickstart.git dest="/home/{{user}}/.vim" update=no
+
+- name: update submodules in vim bundles
+  command: chdir="/home/{{user}}/.vim" git submodule update --init
+
+- name: make symlinc for vimrc
+  file: src="/home/{{user}}/.vim/vimrc" dest="/home/{{user}}/.vimrc" owner={{user}} state=link
+
+- name: run BundleInstall
+  command: vim +BundleInstall +qall
 
 - name: checkout devstack repo
   git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no
@@ -48,7 +61,7 @@
 
 - name: configure for functional testing
   shell: bash "{{project_dir}}/neutron/tools/configure_for_func_testing.sh" "{{project_dir}}/devstack" -i
-  environment: 
+  environment:
       DATABASE_PASSWORD: "{{devstack_admin_pass.stdout}}"
       MYSQL_PASSWORD: "{{devstack_admin_pass.stdout}}"
 
