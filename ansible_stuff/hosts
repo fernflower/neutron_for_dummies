@@ -1,7 +1,2 @@
-vm1 ansible_ssh_user=dev-user ansible_ssh_host=172.18.161.7
-
-[devstack-vms]
-vm1
-
-[devstack-vms:vars]
-project_dir=/home/dev-user
+[devstack_vms]
+172.18.161.10

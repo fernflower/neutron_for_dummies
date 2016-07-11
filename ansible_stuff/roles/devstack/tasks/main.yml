@@ -7,12 +7,13 @@
       - git
       - git-review
       - ack-grep
+      - build-essential
       - python2.7
       - language-pack-ru
       - vim
   sudo: yes
 
-# FIXME add python3.4 altinstall
+- include: install_python3.yml
 
 - name: clone repo with nice vim config
   git: repo=https://github.com/fernflower/vim-quickstart.git dest="/home/{{user}}/.vim" update=no
@@ -38,8 +39,13 @@
 - name: checkout neutron repo
   git: repo=https://github.com/openstack/neutron.git update=no dest={{project_dir}}/neutron
 
-- name: copy localrc to devstack dir
+- name: copy py2 localrc to devstack dir
   copy: src=neutron_rally_localrc dest="{{project_dir}}/devstack/localrc" owner={{user}}
+  when: use_python3 == False
+
+- name: copy py3 localrc to devstack dir
+  copy: src=neutron_rally_py3_localrc dest="{{project_dir}}/devstack/localrc" owner={{user}}
+  when: use_python3 == True
 
 - name: verify ADMIN_PASSWORD is set in localrc
   shell: grep "ADMIN_PASSWORD=" "{{project_dir}}/devstack/localrc"
@@ -66,6 +72,5 @@
       MYSQL_PASSWORD: "{{devstack_admin_pass.stdout}}"
 
 - name: change rabbitmq user password for devstack's one
-  # FIXME rabbit_userid may not be constant
   shell: rabbitmqctl change_password stackrabbit "{{devstack_admin_pass.stdout}}"
   sudo: yes

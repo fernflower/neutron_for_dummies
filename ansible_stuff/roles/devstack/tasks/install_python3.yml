@@ -1,0 +1,21 @@
+- name: install system dependencies
+  apt: name={{item}} state=latest
+  with_items:
+      - build-essential
+      - libpython3-dev
+  sudo: yes
+
+- name: download python3 tarball
+  get_url: url="https://www.python.org/ftp/python/{{python3_version}}/Python-{{python3_version}}.tgz" dest=/usr/src
+  sudo: yes
+  
+- name: untar python3 archive
+  shell: tar -xvf "/usr/src/Python-{{python3_version}}.tgz" -C "/usr/src"
+  sudo: yes
+  
+- name: configure python3
+  command: chdir="/usr/src/Python-{{python3_version}}" ./configure 
+
+- name: altinstall python3
+  command: chdir="/usr/src/Python-{{python3_version}}" make altinstall
+  sudo: yes
