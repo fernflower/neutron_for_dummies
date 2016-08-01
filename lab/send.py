@@ -55,22 +55,42 @@ def main():
     if parsed.command == "backup":
         backup(server=parsed.server, env=parsed.env, bkp=parsed.name,
                vm_type=parsed.type, auth_data=auth_data)
+    elif parsed.command == "revert":
+        revert(server=parsed.server, env=parsed.env, bkp=parsed.name,
+               vm_type=parsed.type, auth_data=auth_data)
+    else:
+        raise NotImplemented("Command %s not implemented yet" % parsed.command)
+
+
+def revert(server, env, bkp, vm_type, auth_data):
+    if bkp is None:
+        LOG.error("Backup snapshot 'bkp' must be set for revert command!")
+        return
+    data = {"DOMAIN": env,
+            "SNAP_NAME": bkp,
+            # TODO(iva) optional storage pool?
+            "STORAGE_POOL": "big",
+            "OPERATION": "revert-cluster"}
+    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    _send_request(url, data, auth_data)
 
 
 def backup(server, env, bkp, vm_type, auth_data):
-    params = {"delay": "0sec"}
     if bkp is None:
         bkp = "bkp_%s" % time.time()
     data = {"DOMAIN": env,
             "SNAP_NAME": bkp,
             # TODO(iva) optional storage pool?
             "STORAGE_POOL": "big",
-            "OPERATION": "snapshot-cluster"
-            }
+            "OPERATION": "snapshot-cluster"}
+    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    _send_request(url, data, auth_data)
+
+
+def _send_request(url, data, auth_data):
+    params = {"delay": "0sec"}
     data["json"] = json.dumps({"parameter": [{"name": k, "value": v}
                                              for k, v in data.iteritems()]})
-    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
-    cookies = {}
     # if user provides a token -> use it, otherwise try to find some cookies in
     # FF sessions backup file
     if not auth_data:
@@ -81,9 +101,7 @@ def backup(server, env, bkp, vm_type, auth_data):
                           auth=requests.auth.HTTPBasicAuth(auth_data['user'],
                                                            auth_data['token']))
     if r.status_code == 201:
-        LOG.info("Success! Backup for %(env)s (%(bkp)s) on %(server)s "
-                 "successfully started" % {"server": server, "env": env,
-                                           "bkp": bkp})
+        LOG.info("Success!")
     else:
         LOG.info(r.text)
 
