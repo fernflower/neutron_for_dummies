@@ -16,6 +16,11 @@ for s in "${SERVERS[@]}"; do
         if [[ "$env" =~ ^fuel-slave-* ]]; then
             continue;
         fi
+        # remove fuel-master prefix
+        prefix="fuel-master-"
+        name="$env"
+        envname=${name#$prefix}
+
         vlans=$(ssh "$USER@$s" "virsh dumpxml $env | xmllint --xpath \"/domain/devices/interface/vlan/tag/@id\" - 2>/dev/null | awk '{gsub(\"id=\",\"\",\$0); print \$0}' | xargs");
         macs=$(ssh "$USER@$s" "virsh dumpxml $env | xmllint --xpath \"//devices/interface/mac/@address\" - 2>/dev/null | awk '{gsub(\"address=\",\"\",\$0); print \$0}' | xargs");
         for mac in $macs; do
@@ -27,10 +32,9 @@ for s in "${SERVERS[@]}"; do
             fi
         done;
         if [[ $vlans ]]; then
-            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$env, vlans=$vlans)";
+            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$envname, vlans=$vlans)";
         else
-            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$env)";
+            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$envname)";
         fi
     done;
 done;
-
