@@ -14,7 +14,6 @@ logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
 
 
-# TODO(iva) should be an easier way to perform sso authentication
 def _get_auth_cookies():
     """
     This implementation fetches cookies from Mozilla's recovery.js file
@@ -47,13 +46,18 @@ def main():
     parser.add_argument("--type", choices=["cluster", "vm"],
                         help="Environment type, default to cluster",
                         default="cluster")
+    parser.add_argument("--user", help="Jenkins API user")
+    parser.add_argument("--token", help="Jenkins API token")
     parsed = parser.parse_args()
+    auth_data = None
+    if parsed.user and parsed.token:
+        auth_data = {"user": parsed.user, "token": parsed.token}
     if parsed.command == "backup":
         backup(server=parsed.server, env=parsed.env, bkp=parsed.name,
-               vm_type=parsed.type)
+               vm_type=parsed.type, auth_data=auth_data)
 
 
-def backup(server, env, bkp, vm_type):
+def backup(server, env, bkp, vm_type, auth_data):
     params = {"delay": "0sec"}
     if bkp is None:
         bkp = "bkp_%s" % time.time()
@@ -61,12 +65,21 @@ def backup(server, env, bkp, vm_type):
             "SNAP_NAME": bkp,
             # TODO(iva) optional storage pool?
             "STORAGE_POOL": "big",
-            "OPERATION": "snapshot-cluster"}
+            "OPERATION": "snapshot-cluster"
+            }
     data["json"] = json.dumps({"parameter": [{"name": k, "value": v}
                                              for k, v in data.iteritems()]})
     url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
-    cookies = _get_auth_cookies()
-    r = requests.post(url, data=data, params=params, cookies=cookies)
+    cookies = {}
+    # if user provides a token -> use it, otherwise try to find some cookies in
+    # FF sessions backup file
+    if not auth_data:
+        r = requests.post(url, data=data, params=params,
+                          cookies=_get_auth_cookies())
+    else:
+        r = requests.post(url, data=data, params=params,
+                          auth=requests.auth.HTTPBasicAuth(auth_data['user'],
+                                                           auth_data['token']))
     if r.status_code == 201:
         LOG.info("Success! Backup for %(env)s (%(bkp)s) on %(server)s "
                  "successfully started" % {"server": server, "env": env,
