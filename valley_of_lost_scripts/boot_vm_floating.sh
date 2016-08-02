@@ -3,7 +3,7 @@ source openrc
 
 EXT="admin_floating_net"
 INT="mydemo"
-SECGROUP="mysecgroup"
+SECGROUP="mysecgroup_neutron"
 ROUTER="demo-router"
 EXT_POOL="start=172.18.171.86,end=172.18.171.90"
 EXT_GATEWAY="172.18.171.1"
@@ -52,6 +52,17 @@ function create_secgroup_nova {
     nova secgroup-add-rule $SECGROUP tcp 22 22 0.0.0.0/0
 }
 
+function create_secgroup_neutron {
+    exists=$(neutron security-group-list | grep $SECGROUP)
+    if [[ $exists ]] ; then
+        echo "Secutity group $SECGROUP exists, not recreating it"
+        return
+    fi
+    neutron security-group-create $SECGROUP
+    neutron security-group-rule-create --protocol icmp --direction ingress $SECGROUP
+    neutron security-group-rule-create --protocol tcp --port-range-min 22 --port-range-max 22 --direction ingress $SECGROUP
+}
+
 function boot_vm_with_floating {
     # create floating ip
     ip=$(nova floating-ip-list | grep $EXT | awk '{if ($6 == "-") print $4}')
@@ -59,6 +70,7 @@ function boot_vm_with_floating {
         echo "Unassigned floating ip $ip exists, will use it"
     else
         nova floating-ip-create
+        ip=$(nova floating-ip-list | grep $EXT | awk '{if ($6 == "-") print $4}')
         echo "Created floating ip $ip"
     fi
     NET_ID=$(neutron net-list | grep "$INT" | awk '{print $2}')
@@ -69,5 +81,5 @@ function boot_vm_with_floating {
 #create_ext_net
 create_int_net
 create_router
-create_secgroup_nova
+create_secgroup_neutron
 boot_vm_with_floating
