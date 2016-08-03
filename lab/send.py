@@ -58,6 +58,9 @@ def main():
     elif parsed.command == "revert":
         revert(server=parsed.server, env=parsed.env, bkp=parsed.name,
                vm_type=parsed.type, auth_data=auth_data)
+    elif parsed.command == "cleanup":
+        cleanup(server=parsed.server, env=parsed.env, vm_type=parsed.type,
+                auth_data=auth_data)
     else:
         raise NotImplemented("Command %s not implemented yet" % parsed.command)
 
@@ -70,7 +73,7 @@ def revert(server, env, bkp, vm_type, auth_data):
             "SNAP_NAME": bkp,
             # TODO(iva) optional storage pool?
             "STORAGE_POOL": "big",
-            "OPERATION": "revert-cluster"}
+            "OPERATION": "revert-%s" % vm_type}
     url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
     _send_request(url, data, auth_data)
 
@@ -82,7 +85,14 @@ def backup(server, env, bkp, vm_type, auth_data):
             "SNAP_NAME": bkp,
             # TODO(iva) optional storage pool?
             "STORAGE_POOL": "big",
-            "OPERATION": "snapshot-cluster"}
+            "OPERATION": "snapshot-%s" % vm_type}
+    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    _send_request(url, data, auth_data)
+
+
+def cleanup(server, env, vm_type, auth_data):
+    data = {"DOMAIN": env,
+            "OPERATION": "cleanup-%s" % vm_type}
     url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
     _send_request(url, data, auth_data)
 
