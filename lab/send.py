@@ -34,32 +34,39 @@ def _get_auth_cookies():
     return {c["name"]: c["value"] for c in cookies_list}
 
 
+def envnameString(s):
+    if not s.startswith(('dev_1:', 'dev_2:', 'dev_3:', 'dev_4:')):
+        raise argparse.ArgumentTypeError("Environment name should be in format"
+                                         " name:server")
+    return s
+
+
 def main():
     parser = argparse.ArgumentParser()
     # TODO(iva) use subparser?
-    parser.add_argument("server", choices=["dev_1", "dev_2", "dev_3", "dev_4"],
-                        help="Server name")
-    parser.add_argument("command", choices=["backup", "revert", "cleanup"],
+    parser.add_argument("command", choices=["backup-cluster", "backup-vm",
+                                            "revert-cluster", "revert-vm",
+                                            "cleanup-cluster", "cleanup-vm"],
                         help="Action to perform")
-    parser.add_argument("env", help="Environment name")
-    parser.add_argument("--name", help="Backup name")
-    parser.add_argument("--type", choices=["cluster", "vm"],
-                        help="Environment type, default to cluster",
-                        default="cluster")
+    parser.add_argument("env", help="Environment name in format 'server:name'",
+                        type=envnameString)
+    parser.add_argument("--snapshot", help="Snapshot name")
     parser.add_argument("--user", help="Jenkins API user")
     parser.add_argument("--token", help="Jenkins API token")
     parsed = parser.parse_args()
     auth_data = None
+    vm_type = parsed.command.split('-')[1]
+    server, env = parsed.env.split(':')
     if parsed.user and parsed.token:
         auth_data = {"user": parsed.user, "token": parsed.token}
-    if parsed.command == "backup":
-        backup(server=parsed.server, env=parsed.env, bkp=parsed.name,
-               vm_type=parsed.type, auth_data=auth_data)
-    elif parsed.command == "revert":
-        revert(server=parsed.server, env=parsed.env, bkp=parsed.name,
-               vm_type=parsed.type, auth_data=auth_data)
-    elif parsed.command == "cleanup":
-        cleanup(server=parsed.server, env=parsed.env, vm_type=parsed.type,
+    if parsed.command.startswith("backup"):
+        backup(server=server, env=env, bkp=parsed.snapshot,
+               vm_type=vm_type, auth_data=auth_data)
+    elif parsed.command.startswith("revert"):
+        revert(server=server, env=env, bkp=parsed.snapshot,
+               vm_type=vm_type, auth_data=auth_data)
+    elif parsed.command.startswith("cleanup"):
+        cleanup(server=server, env=env, vm_type=vm_type,
                 auth_data=auth_data)
     else:
         raise NotImplemented("Command %s not implemented yet" % parsed.command)
