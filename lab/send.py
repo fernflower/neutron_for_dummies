@@ -1,14 +1,18 @@
 import argparse
 import ast
+import ConfigParser
 import json
 import logging
+import os
 import requests
 import time
 
 CI_URL = "networking-ci.vm.mirantis.net"
+DEPLOY_URL = "http://%(ci)s:8080/job/deploy_%(type)s_%(server)s/build"
 MANAGE_URL = "http://%(ci)s:8080/job/manage-%(type)s_%(server)s/build"
 COOKIES_PATH = ("/home/ina/.mozilla/firefox/b6ocijug.default/"
                 "sessionstore-backups/recovery.js")
+PUBLIC_KEY_PATH = "%(home)s/.ssh/id_rsa.pub" % {"home": os.environ["HOME"]}
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -43,16 +47,17 @@ def envnameString(s):
 
 def main():
     parser = argparse.ArgumentParser()
-    # TODO(iva) use subparser?
     parser.add_argument("command", choices=["backup-cluster", "backup-vm",
                                             "revert-cluster", "revert-vm",
-                                            "cleanup-cluster", "cleanup-vm"],
+                                            "cleanup-cluster", "cleanup-vm",
+                                            "deploy-vm"],
                         help="Action to perform")
     parser.add_argument("env", help="Environment name in format 'server:name'",
                         type=envnameString)
     parser.add_argument("--snapshot", help="Snapshot name")
     parser.add_argument("--user", help="Jenkins API user")
     parser.add_argument("--token", help="Jenkins API token")
+    parser.add_argument("--config", help="Configuration file for deploy job")
     parsed = parser.parse_args()
     auth_data = None
     vm_type = parsed.command.split('-')[1]
@@ -68,6 +73,13 @@ def main():
     elif parsed.command.startswith("cleanup"):
         cleanup(server=server, env=env, vm_type=vm_type,
                 auth_data=auth_data)
+    elif parsed.command.startswith("deploy"):
+        # validate deploy-* command to have config parameter set
+        if not parsed.config:
+            LOG.error("'Config' parameter must be set for deploy-* job")
+            return
+        deploy(server=server, env=env, vm_type=vm_type, config=parsed.config,
+               auth_data=auth_data)
     else:
         raise NotImplemented("Command %s not implemented yet" % parsed.command)
 
@@ -102,6 +114,27 @@ def cleanup(server, env, vm_type, auth_data):
             "OPERATION": "cleanup-%s" % vm_type}
     url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
     _send_request(url, data, auth_data)
+
+
+# TODO(iva) cluster deploy with configurations?
+def deploy(server, env, vm_type, config, auth_data):
+    if vm_type != "vm":
+        raise NotImplemented("Cluster deployments not supported yet")
+    data = _data_from_config(config, env)
+    url = DEPLOY_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    _send_request(url, data, auth_data)
+
+
+def _data_from_config(config, env):
+    cfg = ConfigParser.ConfigParser()
+    cfg.read(config)
+    data = {k.upper(): v for k, v in cfg.items('default')}
+    # TODO(iva) allow unknows argparse parameters to override those set in
+    # config?
+    with open(PUBLIC_KEY_PATH) as f:
+        data["PUBLIC_KEY"] = f.read()
+    data["DOMAIN"] = env
+    return data
 
 
 def _send_request(url, data, auth_data):
