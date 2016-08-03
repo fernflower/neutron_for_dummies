@@ -3,15 +3,15 @@
 # and can be sshed without password
 
 # env name prefix to filter
-ENVNAME="iv"
+ENVNAME_PREFIX="iv"
 # a ci user who can ssh to SERVERS
 USER="ivasilevskaya"
 # a list of servers to gather data
-SERVERS=(neutron-dev-1 neutron-dev-2 neutron-dev-3 neutron-dev-4)
+SERVERS=("dev_1" "dev_2" "dev_3" "dev_4")
 
 # outputs data in csv format (server,env,vlans)
 for s in "${SERVERS[@]}"; do
-    for env in $(ssh "$USER@$s" "virsh list | grep $ENVNAME | awk '{print \$2}'"); do
+    for env in $(ssh "$USER@$s" "virsh list | grep $ENVNAME_PREFIX | awk '{print \$2}'"); do
         # filter out fuel-slaves
         if [[ "$env" =~ ^fuel-slave-* ]]; then
             continue;
@@ -32,9 +32,9 @@ for s in "${SERVERS[@]}"; do
             fi
         done;
         if [[ $vlans ]]; then
-            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$envname, vlans=$vlans)";
+            echo "$s (ip=$ip_ok, envname=$envname, vlans=$vlans)";
         else
-            echo "$s (mac=$mac_ok, ip=$ip_ok, envname=$envname)";
+            echo "$s (ip=$ip_ok, envname=$envname)";
         fi
     done;
 done;
