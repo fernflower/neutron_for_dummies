@@ -1,0 +1,10 @@
+[default]
+
+DOMAIN=
+STORAGE_POOL=big
+CPU=2
+RAM=16384
+HDD_SIZE=50
+OS_TYPE=Custom
+PUBLIC_KEY=
+CUSTOM_IMAGE=https://cloud-images.ubuntu.com/xenial/current/xenial-server-cloudimg-amd64-disk1.img
