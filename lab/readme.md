@@ -7,20 +7,25 @@ In short, a trivial usecase like triggering parameterized builds is performed by
 
 As long as mos-neutron team uses jenkins jobs as a common way to fire up and manage virtual environments of different kinds, why 
 not utilize this cool feature and make UI haters life a bit easier? For those incapable of memorizing proper configuration defaults this 
-also brings a tempting feature to save vm/cluster configurations as an ini files.
+also brings a tempting feature to save vm/cluster configurations as ini files.
 
 ### How can I try it?
 #### Learn what's yours and where it lives
 A plain bash script can collect data about your virtual environments by quering neutron devlab servers. It may 
 require some tuning (like setting ENVNAME_PREFIX, USER and SERVERS) variables to match your defaults.
 
-`bash lab_resources_usage.sh`
+`bash lab/lab_resources_usage.sh`
 
 will output names, ips and some other specific data about actual up-and-running environments on every server.
 
 #### Manage existing or create new environments without Jenkins UI interaction
 You will need a username and Jenkins API token for this to work. Visiting [Jenkins account settings](http://networking-ci.vm.mirantis.net:8080/me/configure)
 is a way to get these.
+
+To make life easier you can make an alias *ci* to *python lab/send.py* by adding a file */usr/local/bin/ci* with the following contents:
+
+`#~/bin/sh
+python PATH_TO_THE_CLONED_REPO/lab/send.py "$@"`
 
 * To clean up vm environment ENV on server dev_1
 
@@ -34,10 +39,11 @@ is a way to get these.
 
 `python lab/send.py revert-cluster dev_3:ENV --snapshot SNAP42 --token TOKEN --user USER` 
 
-* To deploy a new environment (only vms available at the moment)
+* To deploy a new environment
 
 `python lab/send.py deploy-vm dev_4:ENV --config lab/configurations/vm_xenial --token TOKEN --user USER`
 
+`python lab/send.py deploy-cluster dev_3:iv11 --config cluster_2nodes_iva_3161 --token 88c5b5e634a80db9342d502426f26c2f --user ivasilevskaya`
 
 #### Save configurations for future use as ini files
 The existing configurations are stored in lab/configurations. 
@@ -47,4 +53,3 @@ by passing it on the command line as an optional argument.
 * To deploy vm on server dev_4 with OS_TYPE=Ubuntu (config value Custom) and HDD_SIZE=42 (config value 50)
 
 `python lab/send.py deploy-vm dev_4:ENV --config lab/configurations/vm_xenial  --token TOKEN --user USER --OS_TYPE=Ubuntu --HDD_SIZE=42`
-

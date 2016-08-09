@@ -1,5 +1,4 @@
 import argparse
-import ast
 import ConfigParser
 import json
 import logging
@@ -30,7 +29,7 @@ def parse_args():
     parser.add_argument("command", choices=["backup-cluster", "backup-vm",
                                             "revert-cluster", "revert-vm",
                                             "cleanup-cluster", "cleanup-vm",
-                                            "deploy-vm"],
+                                            "deploy-vm", "deploy-cluster"],
                         help="Action to perform")
     parser.add_argument("env", help="Environment name in format 'server:name'",
                         type=_envnameString)
@@ -102,10 +101,7 @@ def cleanup(server, env, vm_type, auth_data):
     _send_request(url, data, auth_data)
 
 
-# TODO(iva) cluster deploy with configurations?
 def deploy(server, vm_type, config, auth_data, override):
-    if vm_type != "vm":
-        raise NotImplemented("Cluster deployments not supported yet")
     data = _data_from_config(config, override=override)
     url = DEPLOY_URL % {"server": server, "ci": CI_URL, "type": vm_type}
     _send_request(url, data, auth_data)
