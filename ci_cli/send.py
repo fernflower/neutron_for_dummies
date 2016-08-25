@@ -8,8 +8,8 @@ import sys
 import time
 
 CI_URL = "http://networking-ci.vm.mirantis.net:8080/job/%(job)s/build"
-DEPLOY_JOB = "deploy_%(type)s_%(server)s"
-MANAGE_JOB = "manage-%(type)s_%(server)s"
+DEPLOY_JOB = "deploy_{vm_type}_{server}"
+MANAGE_JOB = "manage-{vm_type}_{server}"
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -23,12 +23,7 @@ def _envnameString(s):
 
 
 def _formUrl(job, server, vm_type):
-    if vm_type == 'cluster' and job.startswith('deploy_9.x_'):
-        # XXX special case until job names are unified
-        server = server.replace('_', '')
-        job = job.format(vm_type=vm_type, server=server)
-    else:
-        job = job % {'server': server, 'type': vm_type}
+    job = job.format(vm_type=vm_type, server=server)
     return CI_URL % {'job': job}
 
 
