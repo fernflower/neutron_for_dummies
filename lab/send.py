@@ -4,13 +4,12 @@ import json
 import logging
 import os
 import requests
+import sys
 import time
 
-CI_URL = "networking-ci.vm.mirantis.net"
-DEPLOY_URL = "http://%(ci)s:8080/job/deploy_%(type)s_%(server)s/build"
-MANAGE_URL = "http://%(ci)s:8080/job/manage-%(type)s_%(server)s/build"
-# TODO(iva) make it configurable?
-PUBLIC_KEY_PATH = "%(home)s/.ssh/id_rsa.pub" % {"home": os.environ["HOME"]}
+CI_URL = "http://networking-ci.vm.mirantis.net:8080/job/%(job)s/build"
+DEPLOY_JOB = "deploy_%(type)s_%(server)s"
+MANAGE_JOB = "manage-%(type)s_%(server)s"
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -21,6 +20,16 @@ def _envnameString(s):
         raise argparse.ArgumentTypeError("Environment name should be in format"
                                          " name:server")
     return s
+
+
+def _formUrl(job, server, vm_type):
+    if vm_type == 'cluster' and job.startswith('deploy_9.x_cluster'):
+        # XXX special case until job names are unified
+        server = server.replace('_', '')
+        job = job.format(server=server)
+    else:
+        job = job % {'server': server, 'type': vm_type}
+    return CI_URL % {'job': job}
 
 
 def parse_args():
@@ -44,9 +53,13 @@ def main():
     parsed, unknown = parse_args()
     vm_type = parsed.command.split('-')[1]
     server, env = parsed.env.split(':')
+
     # turn unknown args into optional arguments
     # args should be passed as --OVERRIDE_ARGUMENT=VALUE
-    override = dict(tuple(arg.split('=', 1))
+    def _convert_arg(arg):
+        return arg.replace('-', '_').upper()
+
+    override = dict((_convert_arg(arg.split('=', 1)[0]), arg.split('=')[1])
                     for arg in [u.replace('--', '') for u in unknown])
     override["DOMAIN"] = env
     auth_data = {"user": parsed.user, "token": parsed.token}
@@ -64,7 +77,10 @@ def main():
         # validate deploy-* command to have config parameter set
         if not parsed.config:
             LOG.error("'Config' parameter must be set for deploy-* job")
-            return
+            sys.exit(1)
+        if not os.path.exists(parsed.config):
+            LOG.error("Config file %s does not exist" % parsed.config)
+            sys.exit(1)
         deploy(server=server, vm_type=vm_type, config=parsed.config,
                auth_data=auth_data, override=override)
     else:
@@ -74,12 +90,12 @@ def main():
 def revert(server, env, bkp, vm_type, auth_data):
     if bkp is None:
         LOG.error("Backup snapshot 'bkp' must be set for revert command!")
-        return
+        sys.exit(1)
     data = {"DOMAIN": env,
             "SNAP_NAME": bkp,
             "STORAGE_POOL": "big",
             "OPERATION": "revert-%s" % vm_type}
-    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    url = _formUrl(MANAGE_JOB, server, vm_type)
     _send_request(url, data, auth_data)
 
 
@@ -90,24 +106,25 @@ def backup(server, env, bkp, vm_type, auth_data):
             "SNAP_NAME": bkp,
             "STORAGE_POOL": "big",
             "OPERATION": "snapshot-%s" % vm_type}
-    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    url = _formUrl(MANAGE_JOB, server, vm_type)
     _send_request(url, data, auth_data)
 
 
 def cleanup(server, env, vm_type, auth_data):
     data = {"DOMAIN": env,
             "OPERATION": "cleanup-%s" % vm_type}
-    url = MANAGE_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    url = _formUrl(MANAGE_JOB, server, vm_type)
     _send_request(url, data, auth_data)
 
 
 def deploy(server, vm_type, config, auth_data, override):
-    data = _data_from_config(config, override=override)
-    url = DEPLOY_URL % {"server": server, "ci": CI_URL, "type": vm_type}
+    data = _data_from_config(config, server, override=override)
+    job = data.pop('JOB', DEPLOY_JOB)
+    url = _formUrl(job, server, vm_type)
     _send_request(url, data, auth_data)
 
 
-def _data_from_config(config, override=None):
+def _data_from_config(config, server, override=None):
     """Transfer config values in data to be submitted.
 
        If override dictionary is passed, then the values from it override those
@@ -116,15 +133,31 @@ def _data_from_config(config, override=None):
     cfg = ConfigParser.ConfigParser()
     cfg.read(config)
     data = {k.upper(): v for k, v in cfg.items('default')}
-    # TODO(iva) make public_key a usual parameter and pass with override?
-    if "PUBLIC_KEY" in data:
-        with open(PUBLIC_KEY_PATH) as f:
-            data["PUBLIC_KEY"] = f.read()
     if not override:
         return data
     for param in {k: v for k, v in override.iteritems() if k in data}:
         data[param] = override[param]
-    # TODO(iva) any validation?
+    # substitute public key file name for its contents
+    pubkey_file = os.path.expanduser(data["PUBLIC_KEY"])
+    if os.path.exists(pubkey_file):
+        with open(pubkey_file) as f:
+            data["PUBLIC_KEY"] = f.read()
+    # validate and choose proper job by checking [jenkins] session
+    try:
+        jenkins_data = {k.upper(): v for k, v in cfg.items('jenkins')}
+        servers = jenkins_data.get('servers')
+        if servers and not (server in [s.strip() for s in
+                                       jenkins_data['servers'].split(',')]):
+            LOG.error("This configuration file may be used for servers"
+                      "%(servers)s only, not %(server)s" % {'servers': servers,
+                                                            'server': server})
+            sys.exit(1)
+        if jenkins_data.get('JOB'):
+            data['JOB'] = jenkins_data['JOB']
+
+    except ConfigParser.NoSectionError:
+        # no section -> no validation
+        pass
     return data
 
 
