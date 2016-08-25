@@ -23,10 +23,10 @@ def _envnameString(s):
 
 
 def _formUrl(job, server, vm_type):
-    if vm_type == 'cluster' and job.startswith('deploy_9.x_cluster'):
+    if vm_type == 'cluster' and job.startswith('deploy_9.x_'):
         # XXX special case until job names are unified
         server = server.replace('_', '')
-        job = job.format(server=server)
+        job = job.format(vm_type=vm_type, server=server)
     else:
         job = job % {'server': server, 'type': vm_type}
     return CI_URL % {'job': job}
@@ -138,10 +138,11 @@ def _data_from_config(config, server, override=None):
     for param in {k: v for k, v in override.iteritems() if k in data}:
         data[param] = override[param]
     # substitute public key file name for its contents
-    pubkey_file = os.path.expanduser(data["PUBLIC_KEY"])
-    if os.path.exists(pubkey_file):
-        with open(pubkey_file) as f:
-            data["PUBLIC_KEY"] = f.read()
+    if data.get("PUBLIC_KEY"):
+        pubkey_file = os.path.expanduser(data["PUBLIC_KEY"])
+        if os.path.exists(pubkey_file):
+            with open(pubkey_file) as f:
+                data["PUBLIC_KEY"] = f.read()
     # validate and choose proper job by checking [jenkins] session
     try:
         jenkins_data = {k.upper(): v for k, v in cfg.items('jenkins')}

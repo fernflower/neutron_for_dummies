@@ -1,5 +1,5 @@
 [jenkins]
-job=deploy_9.x_cluster_{server}
+job=deploy_9.x_{vm_type}_{server}
 servers=dev_1,dev_2
 
 [default]
