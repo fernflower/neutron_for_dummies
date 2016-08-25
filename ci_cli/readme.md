@@ -22,11 +22,11 @@ will output names, ips and some other specific data about actual up-and-running 
 You will need a username and Jenkins API token for this to work. Visiting [Jenkins account settings](http://networking-ci.vm.mirantis.net:8080/me/configure)
 is a way to get these.
 
-To make life easier you can make an alias *ci* to *python ci_cli/send.py* by adding a file */usr/local/bin/ci* with the following contents:
+To make life easier you can make an alias **ci** to **python ci_cli/send.py** by adding a file **/usr/local/bin/ci** with the following contents:
 
 `#~/bin/sh
-
-python PATH_TO_THE_CLONED_REPO/ci_cli/send.py "$@"`
+python PATH_TO_THE_CLONED_REPO/ci_cli/send.py "$@"
+`
 
 * To clean up vm environment ENV on server dev_1
 
@@ -56,13 +56,13 @@ by passing it on the command line as an optional argument.
 `python ci_cli/send.py deploy-vm dev_4:ENV --config ci_cli/configurations/vm_xenial  --token TOKEN --user USER --OS_TYPE=Ubuntu --HDD_SIZE=42`
 
 * To make certain configuration available for deployment only on
-specific servers, *servers* parameter must be specified in [jenkins] section.
+specific servers, **servers** parameter must be specified in [jenkins] section.
 
 `[jenkins]
 servers=dev_1,dev_3
 `
 
-* For a custom deploy job, *job* parameter in [jenkins] section can be utilized. *vm_type* and *server* will be set from ENV and SERVER parameters. For example, to run brand new deploy_9.x_cluster job on dev_4 server
+* For a custom deploy job, **job** parameter in [jenkins] section can be utilized. **vm_type** and **server** will be set from ENV and SERVER parameters. For example, to run brand new deploy_9.x_cluster job on dev_4 server
 
 `[jenkins]
 job=deploy_9.x_{vm_type}_{server}
