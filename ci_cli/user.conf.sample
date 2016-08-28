@@ -3,12 +3,12 @@
 # neutron dev servers
 # If no value is set it is assumed that proper alias with name
 # dev_i exists in /etc/hosts
-#dev_1= 
-#dev_2=
-#dev_3=
-#dev_4=
+#dev_1=dev_1
+#dev_2=dev_2
+#dev_3=dev_3
+#dev_4=dev_4
 
-# user environment name prefix to filter against in 
+# user environment name prefix to filter against in
 # lab_resources_usage script
 env_prefix=
 # username to access dev_servers/jenkins
