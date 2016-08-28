@@ -10,6 +10,7 @@ import time
 CI_URL = "http://networking-ci.vm.mirantis.net:8080/job/%(job)s/build"
 DEPLOY_JOB = "deploy_{vm_type}_{server}"
 MANAGE_JOB = "manage-{vm_type}_{server}"
+USER_CONFIG = "user.conf"
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -38,16 +39,32 @@ def parse_args():
     parser.add_argument("env", help="Environment name in format 'server:name'",
                         type=_envnameString)
     parser.add_argument("--snapshot", help="Snapshot name")
-    parser.add_argument("--user", help="Jenkins API user", required=True)
-    parser.add_argument("--token", help="Jenkins API token", required=True)
+    parser.add_argument("--user", help="Jenkins API user")
+    parser.add_argument("--token", help="Jenkins API token")
     parser.add_argument("--config", help="Configuration file for deploy job")
+    parser.add_argument("--user-config", help="User config file",
+                        default=USER_CONFIG)
     return parser.parse_known_args()
+
+
+def _parse_user_config(config):
+    # check user config file exists
+    if not os.path.exists(config):
+        LOG.error("User config file %s does not exist. "
+                  "Create one from sample config." % config)
+        sys.exit(1)
+    cfg = ConfigParser.ConfigParser()
+    cfg.read(config)
+    return {k: v for k, v in cfg.items('default')}
 
 
 def main():
     parsed, unknown = parse_args()
+    user_config = _parse_user_config(parsed.user_config)
     vm_type = parsed.command.split('-')[1]
     server, env = parsed.env.split(':')
+    # if alias/ip is set in user config then override server name
+    server = user_config.get(server, server)
 
     # turn unknown args into optional arguments
     # args should be passed as --OVERRIDE_ARGUMENT=VALUE
@@ -57,7 +74,11 @@ def main():
     override = dict((_convert_arg(arg.split('=', 1)[0]), arg.split('=')[1])
                     for arg in [u.replace('--', '') for u in unknown])
     override["DOMAIN"] = env
-    auth_data = {"user": parsed.user, "token": parsed.token}
+    auth_data = {"user": user_config.get('user') or parsed.user,
+                 "token": user_config.get('token') or parsed.token}
+    if not all(auth_data[k] for k in auth_data):
+        LOG.error("Both 'user' and 'token' parameters must be set")
+        sys.exit(1)
     # TODO(iva) make other jobs utilize config/override args?
     if parsed.command.startswith("backup"):
         backup(server=server, env=env, bkp=parsed.snapshot,

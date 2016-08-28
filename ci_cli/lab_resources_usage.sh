@@ -2,15 +2,15 @@
 # make sure that neutron-dev labs are present in /etc/hosts
 # and can be sshed without password
 
-# env name prefix to filter
-ENVNAME_PREFIX="iv"
-# a ci user who can ssh to SERVERS
-USER="ivasilevskaya"
-# a list of servers to gather data
-SERVERS=("dev_1" "dev_2" "dev_3" "dev_4")
+# path to file with user configuration
+USER_CONF="user.conf"
+
+ENVNAME_PREFIX=$(awk -F "=" '/env_prefix/ {print $2}' $USER_CONF | xargs)
+USER=$(awk -F "=" '/user/ {print $2}' $USER_CONF | xargs)
+SERVERS=$(awk -F "=" '/dev_[0-9]/ {gsub("#","",$2); print $2}' $USER_CONF | xargs)
 
 # outputs data in csv format (server,env,vlans)
-for s in "${SERVERS[@]}"; do
+for s in $SERVERS; do
     for env in $(ssh "$USER@$s" "virsh list | grep $ENVNAME_PREFIX | awk '{print \$2}'"); do
         # filter out fuel-slaves
         if [[ "$env" =~ ^fuel-slave-* ]]; then

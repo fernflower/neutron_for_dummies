@@ -1,11 +1,11 @@
 [default]
-ISO_CUSTOM_URL=http://srv52-bud.infra.mirantis.net/fuelweb-iso/fuel-10.0-mitaka-168-2016-08-02_10-00-00.iso
+ISO_CUSTOM_URL=http://srv52-bud.infra.mirantis.net/fuelweb-iso/fuel-10.0-666-2016-08-26_05-00-00.iso
 DOMAIN=iv11
 VLAN=3161
 NODES=2
 STORAGE_POOL=big
 VLANS_SLAVES=3162 3163 3164
-FUEL_CPU=2
+FUEL_CPU=4
 FUEL_RAM=8192
 FUEL_HDD_SIZE=50
 SLAVE_CPU=1
@@ -15,7 +15,7 @@ SETUP_CLUSTER=true
 HYPERVISOR=kvm
 ENV_NAME=iv11
 CLUSTER_MODE=ha_compact
-RELEASE=Newton on Ubuntu 14.04
+RELEASE=Newton on Ubuntu 16.04
 SEGMENT_TYPE=gre
 NODE_COUNT=2
 CONTROLLER_COUNT=1
