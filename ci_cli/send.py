@@ -10,7 +10,9 @@ import time
 CI_URL = "http://networking-ci.vm.mirantis.net:8080/job/%(job)s/build"
 DEPLOY_JOB = "deploy_{vm_type}_{server}"
 MANAGE_JOB = "manage-{vm_type}_{server}"
-USER_CONFIG = "user.conf"
+os.path.dirname(os.path.realpath(__file__))
+USER_CONFIG = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                           "user.conf")
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
