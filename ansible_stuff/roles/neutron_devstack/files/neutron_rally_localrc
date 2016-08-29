@@ -1,0 +1,16 @@
+LOGFILE=$DEST/logs/stack.sh.log
+
+ADMIN_PASSWORD=secretrabbit
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+#FIXED_RANGE=172.31.1.0/24
+#FLOATING_RANGE=192.168.20.0/25
+#HOST_IP=10.3.4.5
+
+# disable nove networking
+disable_service n-net
+# enable neutron
+enable_service q-svc q-agt q-dhcp q-l3 q-meta
+
+enable_plugin rally https://github.com/openstack/rally master

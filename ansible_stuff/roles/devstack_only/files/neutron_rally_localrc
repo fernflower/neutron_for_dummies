@@ -8,11 +8,11 @@ SERVICE_PASSWORD=$ADMIN_PASSWORD
 #FLOATING_RANGE=192.168.20.0/25
 #HOST_IP=10.3.4.5
 
+# disable nove networking
 disable_service n-net
-enable_service q-svc
-enable_service q-agt
-enable_service q-dhcp
-enable_service q-l3
-enable_service q-meta
+# enable neutron
+enable_service q-svc q-agt q-dhcp q-l3 q-meta
+# enable heat
+enable_service h-eng h-api h-api-cfn h-api-cw
 
 enable_plugin rally https://github.com/openstack/rally master

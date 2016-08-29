@@ -1,0 +1,4 @@
+- hosts: devstack_vms
+  roles:
+      - devstack_only
+      - shaker

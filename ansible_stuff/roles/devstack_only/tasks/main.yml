@@ -1,0 +1,26 @@
+- apt: update-cache=yes
+  sudo: yes
+
+- name: install system dependencies
+  apt: name={{item}} state=latest
+  with_items:
+      - git
+      - ack-grep
+      - build-essential
+      - python2.7
+      - language-pack-ru
+  sudo: yes
+
+- name: checkout devstack repo
+  git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no
+
+- name: copy py2 localrc to devstack dir
+  copy: src=neutron_rally_localrc dest="{{project_dir}}/devstack/localrc" owner={{user}}
+
+- name: check for devstack screen session
+  shell: screen -ls stack | awk '$0~/No Sockets found/{print "no session"}'
+  register: screen_session_exists
+
+- name: run stack.sh
+  shell: bash "{{project_dir}}/devstack/stack.sh"
+  when: screen_session_exists.stdout == "no session"
