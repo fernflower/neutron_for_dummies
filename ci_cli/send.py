@@ -8,11 +8,10 @@ import sys
 import time
 
 CI_URL = "http://networking-ci.vm.mirantis.net:8080/job/%(job)s/build"
-DEPLOY_JOB = "deploy_{vm_type}_{server}"
-MANAGE_JOB = "manage-{vm_type}_{server}"
-os.path.dirname(os.path.realpath(__file__))
-USER_CONFIG = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                           "user.conf")
+DIR = os.path.dirname(os.path.realpath(__file__))
+USER_CONFIG = os.path.join(DIR, "user.conf")
+CONF_MAP = {op: "%(dir)s/configurations/%(op)s" % {"dir": DIR, "op": op}
+            for op in ['revert', 'cleanup', 'backup']}
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -76,22 +75,14 @@ def main():
     override = dict((_convert_arg(arg.split('=', 1)[0]), arg.split('=')[1])
                     for arg in [u.replace('--', '') for u in unknown])
     override["DOMAIN"] = env
+    if parsed.snapshot:
+        override["SNAP_NAME"] = parsed.snapshot
     auth_data = {"user": user_config.get('user') or parsed.user,
                  "token": user_config.get('token') or parsed.token}
     if not all(auth_data[k] for k in auth_data):
         LOG.error("Both 'user' and 'token' parameters must be set")
         sys.exit(1)
-    # TODO(iva) make other jobs utilize config/override args?
-    if parsed.command.startswith("backup"):
-        backup(server=server, env=env, bkp=parsed.snapshot,
-               vm_type=vm_type, auth_data=auth_data)
-    elif parsed.command.startswith("revert"):
-        revert(server=server, env=env, bkp=parsed.snapshot,
-               vm_type=vm_type, auth_data=auth_data)
-    elif parsed.command.startswith("cleanup"):
-        cleanup(server=server, env=env, vm_type=vm_type,
-                auth_data=auth_data)
-    elif parsed.command.startswith("deploy"):
+    if parsed.command.startswith("deploy"):
         # validate deploy-* command to have config parameter set
         if not parsed.config:
             LOG.error("'Config' parameter must be set for deploy-* job")
@@ -102,42 +93,29 @@ def main():
         deploy(server=server, vm_type=vm_type, config=parsed.config,
                auth_data=auth_data, override=override)
     else:
-        raise NotImplemented("Command %s not implemented yet" % parsed.command)
+        manage(parsed.command, server, vm_type, auth_data, override)
 
 
-def revert(server, env, bkp, vm_type, auth_data):
-    if bkp is None:
-        LOG.error("Backup snapshot 'bkp' must be set for revert command!")
-        sys.exit(1)
-    data = {"DOMAIN": env,
-            "SNAP_NAME": bkp,
-            "STORAGE_POOL": "big",
-            "OPERATION": "revert-%s" % vm_type}
-    url = _formUrl(MANAGE_JOB, server, vm_type)
-    _send_request(url, data, auth_data)
-
-
-def backup(server, env, bkp, vm_type, auth_data):
-    if bkp is None:
-        bkp = "bkp_%s" % time.time()
-    data = {"DOMAIN": env,
-            "SNAP_NAME": bkp,
-            "STORAGE_POOL": "big",
-            "OPERATION": "snapshot-%s" % vm_type}
-    url = _formUrl(MANAGE_JOB, server, vm_type)
-    _send_request(url, data, auth_data)
-
-
-def cleanup(server, env, vm_type, auth_data):
-    data = {"DOMAIN": env,
-            "OPERATION": "cleanup-%s" % vm_type}
-    url = _formUrl(MANAGE_JOB, server, vm_type)
+def manage(cmd, server, vm_type, auth_data, override):
+    # op comes in form operation-type (ex. revert-cluster, deploy-vm)
+    op = cmd.split('-')[0]
+    if not override.get('SNAP_NAME'):
+        if op == 'revert':
+            LOG.error("Backup snapshot 'bkp' must be set for revert command!")
+            sys.exit(1)
+        elif op == 'backup':
+            override['SNAP_NAME'] = "bkp_%s" % time.time()
+    data = _data_from_config(CONF_MAP[op], server, override=override)
+    job = data.pop('JOB')
+    # TODO(iva) generalize formatting?
+    data['OPERATION'] = data['OPERATION'].format(vm_type=vm_type)
+    url = _formUrl(job, server, vm_type)
     _send_request(url, data, auth_data)
 
 
 def deploy(server, vm_type, config, auth_data, override):
     data = _data_from_config(config, server, override=override)
-    job = data.pop('JOB', DEPLOY_JOB)
+    job = data.pop('JOB')
     url = _formUrl(job, server, vm_type)
     _send_request(url, data, auth_data)
 
@@ -164,10 +142,9 @@ def _data_from_config(config, server, override=None):
     # validate and choose proper job by checking [jenkins] session
     try:
         jenkins_data = {k.upper(): v for k, v in cfg.items('jenkins')}
-        servers = jenkins_data.get('servers')
-        if servers and not (server in [s.strip() for s in
-                                       jenkins_data['servers'].split(',')]):
-            LOG.error("This configuration file may be used for servers"
+        servers = jenkins_data.get('SERVERS')
+        if servers and not (server in [s.strip() for s in servers.split(',')]):
+            LOG.error("This configuration file may be used for servers "
                       "%(servers)s only, not %(server)s" % {'servers': servers,
                                                             'server': server})
             sys.exit(1)
@@ -175,8 +152,8 @@ def _data_from_config(config, server, override=None):
             data['JOB'] = jenkins_data['JOB']
 
     except ConfigParser.NoSectionError:
-        # no section -> no validation
-        pass
+        LOG.error("[jenkins] section not found in %s" % config)
+        sys.exit(1)
     return data
 
 

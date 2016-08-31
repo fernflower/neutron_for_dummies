@@ -1,3 +1,7 @@
+[jenkins]
+job=deploy_{vm_type}_{server}
+servers=dev_1,dev_2
+
 [default]
 ISO_CUSTOM_URL=http://srv52-bud.infra.mirantis.net/fuelweb-iso/fuel-10.0-mitaka-168-2016-08-02_10-00-00.iso
 DOMAIN=

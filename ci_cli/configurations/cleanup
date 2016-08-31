@@ -1,0 +1,7 @@
+[jenkins]
+job=manage-{vm_type}_{server}
+servers=dev_1,dev_2,dev_3,dev_4
+
+[default]
+DOMAIN=
+OPERATION=cleanup-{vm_type}

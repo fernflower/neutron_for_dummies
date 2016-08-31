@@ -1,5 +1,8 @@
-[default]
+[jenkins]
+job=deploy_{vm_type}_{server}
+servers=dev_1,dev_2,dev_3,dev_4
 
+[default]
 DOMAIN=
 STORAGE_POOL=big
 CPU=2
