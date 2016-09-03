@@ -7,11 +7,13 @@
 #dev_2=dev_2
 #dev_3=dev_3
 #dev_4=dev_4
+# username to access dev_servers.
+ssh_user=
 
 # user environment name prefix to filter against in
 # lab_resources_usage script
 env_prefix=
-# username to access dev_servers/jenkins
+# username to access jenkins
 user=
 # jenkins API token. If not set must be specified for every ci_cli request
 token=

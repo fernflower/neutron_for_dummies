@@ -22,7 +22,7 @@ will output names, ips and some other specific data about actual up-and-running 
 You will need a username and Jenkins API token for this to work. Visiting [Jenkins account settings](http://networking-ci.vm.mirantis.net:8080/me/configure)
 is a way to get these.
 
-Copy user.conf.sample to user.conf, setting **env_prefix**, **user** and **token** variables. If your alias for neutron servers in /etc/hosts differs from dev_i, you may need to set proper names for dev_i servers as well.
+Copy user.conf.sample to user.conf, setting **env_prefix**, **user**, **ssh_user** and **token** variables. If your alias for neutron servers in /etc/hosts differs from dev_i, you may need to set proper names for dev_i servers as well.
 
 To make life easier you can make an alias *ci* to *python ci_cli/send.py* by adding a file */usr/local/bin/ci* with the following contents:
 

@@ -12,6 +12,9 @@ DIR = os.path.dirname(os.path.realpath(__file__))
 USER_CONFIG = os.path.join(DIR, "user.conf")
 CONF_MAP = {op: "%(dir)s/configurations/%(op)s" % {"dir": DIR, "op": op}
             for op in ['revert', 'cleanup', 'backup']}
+# NOTE(iva) Store server: user_server_name mapping as global variable.
+# Definitely not the most elegant solution.
+SERVERS = {s: s for s in ['dev_1', 'dev_2', 'dev_3', 'dev_4']}
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger(__name__)
@@ -62,10 +65,10 @@ def _parse_user_config(config):
 def main():
     parsed, unknown = parse_args()
     user_config = _parse_user_config(parsed.user_config)
+    # if alias/ip is set in user config then override server name
+    SERVERS.update({s: user_config.get(s, s) for s in SERVERS.keys()})
     vm_type = parsed.command.split('-')[1]
     server, env = parsed.env.split(':')
-    # if alias/ip is set in user config then override server name
-    server = user_config.get(server, server)
 
     # turn unknown args into optional arguments
     # args should be passed as --OVERRIDE_ARGUMENT=VALUE
