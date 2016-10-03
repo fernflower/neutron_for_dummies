@@ -11,3 +11,9 @@ computes
 10.20.0.8 # node-9
 10.20.0.7 # node-12
 10.20.0.6 # node-10
+
+[shaker]
+localhost
+
+[shaker:vars]
+horizon_address=172.16.53.131

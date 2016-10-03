@@ -1,0 +1,5 @@
+- hosts: shaker
+  roles:
+    - shaker_centos
+  vars: 
+    project_dir: /root

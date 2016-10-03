@@ -1,0 +1,29 @@
+- name: install system dependencies
+  yum: name={{item}} state=latest
+  with_items:
+    - git
+    - pytz
+
+- name: install virtualenv
+  command: pip install virtualenv
+
+- name: clone shaker repo
+  git: repo=https://github.com/openstack/shaker.git dest="{{project_dir}}/shaker" update=no
+
+- name: create virtualenv
+  command: virtualenv "{{project_dir}}/.venv" -p python2.7
+
+- name: install shaker
+  pip: name=pyshaker virtualenv="{{project_dir}}/.venv"
+
+- name: create shaker openrc script
+  template: src=shaker_openrc.j2 dest="{{project_dir}}/shaker_openrc.sh"
+
+- name: create source shaker script
+  template: src=with_shaker_venv.j2 dest="{{project_dir}}/with_shaker_venv.sh"
+
+- name: run shaker-image-builder
+  command: /bin/bash "{{project_dir}}/with_shaker_venv.sh" shaker-image-builder
+
+- name: open port 5999
+  command: iptables -A INPUT -p tcp -m tcp --dport 5999 -j ACCEPT
