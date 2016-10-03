@@ -1,0 +1,12 @@
+- hosts: nodes
+  roles: 
+    - ovs25
+    - ovsfw_config
+    - patch
+
+# restart ovs agent on computes
+- hosts: computes
+  roles:
+    - restart_compute
+
+# XXX currently ovs and l3-agent restart on controller is manual

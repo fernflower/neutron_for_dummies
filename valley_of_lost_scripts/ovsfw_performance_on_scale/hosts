@@ -1,0 +1,13 @@
+[nodes:children]
+controllers
+computes
+
+[controllers]
+10.20.0.5 # node-7
+10.20.0.3 # node-11
+10.20.0.4 # node-8
+
+[computes]
+10.20.0.8 # node-9
+10.20.0.7 # node-12
+10.20.0.6 # node-10

@@ -1,0 +1,20 @@
+- name: add feature/nfv repo
+  apt_repository: repo='deb http://mirror.fuel-infra.org/feature-nfv-repos/ubuntu/9.0/ mos9.0 main' state=present
+
+- name: add repo key
+  apt_key: url="http://mirror.fuel-infra.org/feature-nfv-repos/ubuntu/9.0/archive-feature-nfv9.0.key" state=present
+
+- name: update package list
+  apt: update_cache=yes
+
+- name: stop openvswitch-switch
+  service: name=openvswitch-switch state=stopped
+
+- name: update ovs to version 2.5
+  apt: name={{item}} state=latest
+  with_items:
+    - openvswitch-switch
+    - openvswitch-common
+
+- name: stop openvswitch-switch
+  service: name=openvswitch-switch state=started

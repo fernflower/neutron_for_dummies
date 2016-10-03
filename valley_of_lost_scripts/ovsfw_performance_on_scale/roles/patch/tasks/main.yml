@@ -1,0 +1,5 @@
+- name: apply patch
+  patch: >
+    src=diff_port_masking
+    basedir=/usr/lib/python2.7/dist-packages
+    strip=1
