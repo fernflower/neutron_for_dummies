@@ -16,5 +16,5 @@
     - openvswitch-switch
     - openvswitch-common
 
-- name: stop openvswitch-switch
+- name: start openvswitch-switch
   service: name=openvswitch-switch state=started

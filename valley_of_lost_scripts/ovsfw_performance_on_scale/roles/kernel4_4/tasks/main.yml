@@ -1,0 +1,5 @@
+- name: copy update kernel script
+  copy: src=upgrade.sh dest="{{project_dir}}/upgrade_kernel.sh"
+
+- name: run magic script to prepare node kernel upgrade
+  command: /bin/sh "{{project_dir}}/upgrade_kernel.sh" 1
