@@ -1,0 +1,17 @@
+- name: make vxlan dir
+  file: path="{{project_dir}}/vxlan_stuff" state=directory
+
+- name: fetch vxlan package from mos9 repo
+  get_url: 
+    url: "http://172.18.170.22/repos/vxlan/{{item}}"
+    dest: "{{project_dir}}/vxlan_stuff/{{item}}"
+  with_items:
+    - vxlan_0.1-1~u14.04+mos2.debian.tar.gz
+    - vxlan_0.1-1~u14.04+mos2.dsc
+    - vxlan_0.1.orig.tar.gz
+
+- name: unpack vxlan from mos9 repo
+  command: dpkg-source -x "{{project_dir}}/vxlan_stuff/vxlan_0.1-1~u14.04+mos2.dsc"
+
+- name: clone ovs repo
+  git: repo=https://github.com/openvswitch/ovs dest="{{project_dir}}/ovs" update=no

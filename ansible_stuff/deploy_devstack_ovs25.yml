@@ -1,0 +1,6 @@
+- hosts: devstack_vms
+  roles:
+    - kernel44
+    - neutron_devstack
+    - ovs25_trusty
+    - vxlan_dkms
