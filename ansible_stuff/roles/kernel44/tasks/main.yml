@@ -1,10 +1,27 @@
 - apt: update-cache=yes
   sudo: yes
 
-- name: get linux-image-generic-lts-xenial
+- name: make dir for kernel package downloads
+  file: path="{{project_dir}}/kernel_packages" state=directory
+
+- name: download kernel 4.4.0.42 packaged
+  get_url: url={{item}} dest="{{project_dir}}/kernel_packages"
+  with_items:
+    - "http://launchpadlibrarian.net/288828136/linux-image-generic_4.4.0.42.44_amd64.deb"
+    - "http://launchpadlibrarian.net/288828135/linux-image-generic-lts-xenial_4.4.0.42.44_amd64.deb"
+
+- name: get linux-image-extra package
   apt: name={{item}} state=latest
   with_items:
-    - linux-image-generic-lts-xenial
+    - linux-image-extra-4.4.0-42-generic
+    - linux-firmware
+  sudo: yes
+
+- name: upgrade kernel
+  command: dpkg -i "{{project_dir}}/kernel_packages/{{item}}"
+  with_items:
+    - linux-image-generic_4.4.0.42.44_amd64.deb
+    - linux-image-generic-lts-xenial_4.4.0.42.44_amd64.deb
   sudo: yes
 
 - name: reboot node
