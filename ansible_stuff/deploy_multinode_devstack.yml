@@ -1,0 +1,24 @@
+- hosts: nodes
+  roles:
+    - kernel44
+
+# prior to deploying computes/network nodes make sure that
+# controllers are up and running
+- hosts: controllers
+  roles:
+    - controller_devstack
+
+# XXX FIXME combine computes and network roles
+- hosts: computes
+  roles:
+    - compute_devstack
+
+- hosts: network
+  roles:
+    - network_devstack
+
+# upgrade ovs to 2.5 on all nodes. Will do it after devstack
+# deployment to be ok with dependencies
+- hosts: nodes
+  roles:
+    - ovs25_trusty

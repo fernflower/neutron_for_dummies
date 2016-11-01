@@ -3,4 +3,3 @@
     - kernel44
     - neutron_devstack
     - ovs25_trusty
-    - vxlan_dkms

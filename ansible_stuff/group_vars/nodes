@@ -1,0 +1,4 @@
+project_dir: /home/dev-user
+user: dev-user
+ansible_ssh_user: dev-user
+openrc: /home/dev-user/devstack/openrc
