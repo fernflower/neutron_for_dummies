@@ -23,7 +23,7 @@ LOG = logging.getLogger(__name__)
 def _envnameString(s):
     if not s.startswith(('dev_1:', 'dev_2:', 'dev_3:', 'dev_4:')):
         raise argparse.ArgumentTypeError("Environment name should be in format"
-                                         " name:server")
+                                         " server:env")
     return s
 
 
