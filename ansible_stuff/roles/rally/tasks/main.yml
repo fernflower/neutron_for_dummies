@@ -1,0 +1,4 @@
+- name: checkout rally repo
+  git: repo=https://github.com/openstack/rally dest="{{project_dir}}/rally" update=no
+
+- name: 
