@@ -4,3 +4,4 @@ ansible_ssh_user: dev-user
 python3_version: 3.5.2
 openrc: /home/dev-user/devstack/openrc
 use_python3: False
+localrc: neutron_rally_localrc

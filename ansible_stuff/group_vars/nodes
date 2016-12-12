@@ -1,4 +1,6 @@
 project_dir: /home/dev-user
 user: dev-user
 ansible_ssh_user: dev-user
+python3_version: 3.5.2
 openrc: /home/dev-user/devstack/openrc
+localrc: neutron_rally_localrc

@@ -18,7 +18,7 @@
   service: name=openvswitch-switch state=stopped
   sudo: yes
 
-- name: update ovs to version 2.5
+- name: update ovs to latest repo version
   apt: name={{item}} state=latest
   with_items:
     - openvswitch-switch

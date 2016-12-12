@@ -30,9 +30,6 @@
 - name: checkout devstack repo
   git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no
 
-- name: checkout rally repo
-  git: repo=https://github.com/openstack/rally dest="{{project_dir}}/rally" update=no
-
 - name: checkout neutron_for_dummies (just in case)
   git: repo=https://github.com/fernflower/neutron_for_dummies.git dest="{{project_dir}}/neutron_for_dummies" update=no
 
@@ -40,12 +37,7 @@
   git: repo=https://github.com/openstack/neutron.git update=no dest={{project_dir}}/neutron
 
 - name: copy py2 localrc to devstack dir
-  copy: src=neutron_rally_localrc dest="{{project_dir}}/devstack/localrc" owner={{user}}
-  when: use_python3 == False
-
-- name: copy py3 localrc to devstack dir
-  copy: src=neutron_rally_py3_localrc dest="{{project_dir}}/devstack/localrc" owner={{user}}
-  when: use_python3 == True
+  template: src="{{localrc}}.j2" dest="{{project_dir}}/devstack/localrc"
 
 - name: verify ADMIN_PASSWORD is set in localrc
   shell: grep "ADMIN_PASSWORD=" "{{project_dir}}/devstack/localrc"

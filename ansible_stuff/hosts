@@ -1,6 +1,6 @@
 # hosts with single node devstack installation
 [devstack_vms]
-172.18.161.11
+172.18.161.18
 
 # hosts where multinode devstack is deployed
 [nodes:children]
@@ -9,11 +9,10 @@ computes
 network
 
 [controllers]
-172.18.171.156
+172.18.161.49
 
 [computes]
-172.18.171.147
-172.18.171.134
+172.18.161.40
 
 [network]
-172.18.171.146
+172.18.161.38

@@ -4,21 +4,27 @@
 
 # prior to deploying computes/network nodes make sure that
 # controllers are up and running
+# XXX FIXME currently no HA deployments, 1 controller only
 - hosts: controllers
   roles:
-    - controller_devstack
+    - neutron_devstack
+  vars:
+    localrc: neutron_controller_localrc
 
-# XXX FIXME combine computes and network roles
 - hosts: computes
   roles:
-    - compute_devstack
+    - neutron_devstack
+  vars:
+    localrc: neutron_compute_localrc
 
 - hosts: network
   roles:
-    - network_devstack
+    - neutron_devstack
+  vars:
+    localrc: neutron_network_devstack
 
-# upgrade ovs to 2.5 on all nodes. Will do it after devstack
-# deployment to be ok with dependencies
+# don't update ovs alongwith kernel update so that mos repos
+# don't interfere with devstack dependencies
 - hosts: nodes
   roles:
-    - ovs25_trusty
+    - ovs26_trusty
