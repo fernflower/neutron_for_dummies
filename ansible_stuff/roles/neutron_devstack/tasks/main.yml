@@ -15,14 +15,7 @@
 
 - include: install_python3.yml
 
-- name: clone repo with nice vim config
-  git: repo=https://github.com/fernflower/vim-quickstart.git dest="/home/{{user}}/.vim" update=no
-
-- name: update submodules in vim bundles
-  command: chdir="/home/{{user}}/.vim" git submodule update --init
-
-- name: make symlinc for vimrc
-  file: src="/home/{{user}}/.vim/vimrc" dest="/home/{{user}}/.vimrc" owner={{user}} state=link
+- include: basic_tweaks.yml
 
 - name: run BundleInstall
   command: vim +BundleInstall +qall
