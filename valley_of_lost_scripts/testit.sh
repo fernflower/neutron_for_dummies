@@ -1,19 +1,23 @@
 USER=admin
-PASSWORD=secretrabbit
-HOST=172.18.171.22
-TENANT_ID=c58b21aadf1d43008d270ea5e4237302
-REMOTE_SEC_GROUP_ID=b98d86ff-32b1-4c24-a96a-98f8664e6f1f
-SEC_GROUP_ID=4447b95d-9b02-4107-85d8-53f7711622af
-START_PORT=81
-INTERVAL=20
+PASSWORD=admin
+HOST=172.16.55.195
+KEYSTONE_ENDPOINT=http://192.168.0.2:35357/v2.0
+TENANT_ID=bda495b375024c8eafbe4c671a964285
+REMOTE_SEC_GROUP_ID=e36a10cb-e654-4fdc-81c0-60841c507126
+SEC_GROUP_ID=c4293567-04f0-465d-af8f-af857eee0235
+START_PORT=${1:-42}
+INTERVAL=${2:-5}
+
+export http_proxy=10.20.0.5:8888
+export https_proxy=10.20.0.5:8888
 
 function run {
     # form body
-    python gen_sec_group_rules.py $SEC_GROUP_ID --min-port $START_PORT --max-port $(($START_PORT+$INTERVAL)) --remote-group-id $REMOTE_SEC_GROUP_ID --tenant-id $TENANT_ID --protocol tcp > body;
+    python gen_sec_group_rules.py $SEC_GROUP_ID --min-port $START_PORT --max-port $(($START_PORT+$INTERVAL)) --remote-group-id $REMOTE_SEC_GROUP_ID --protocol tcp --tenant-id $TENANT_ID > body;
     BODY=$(cat body)
 
     # fetch token
-    TOKEN_JSON=$(curl -O -X POST "http://$HOST:35357/v2.0/tokens" -H "Content-Type:application/json"  -d "{\"auth\":{\"passwordCredentials\":{\"username\": \"$USER\", \"password\": \"$PASSWORD\"}}}");
+    TOKEN_JSON=$(curl -O -X POST "$KEYSTONE_ENDPOINT/tokens" -H "Content-Type:application/json"  -d "{\"auth\":{\"passwordCredentials\":{\"username\": \"$USER\", \"password\": \"$PASSWORD\"}, \"tenantName\":\"admin\"}}");
     TOKEN=$(cat tokens | python -c "import sys, json; print json.load(open('tokens', 'r'))['access']['token']['id']");
     echo $TOKEN > token;
 
