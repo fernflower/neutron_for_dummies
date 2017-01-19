@@ -33,7 +33,7 @@ def _gen_body(args):
             new_rule['security_group_rule']['port_range_min'] = port_start
             new_rule['security_group_rule']['port_range_max'] = port_end
             if args.tenant_id:
-                new_rule['security_group_id']['tenant_id'] = args.tenant_id
+                new_rule['security_group_rule']['tenant_id'] = args.tenant_id
             for val in ['direction', 'protocol', 'remote_group_id',
                         'security_group_id']:
                 new_rule['security_group_rule'][val] = getattr(args, val)
