@@ -10,12 +10,20 @@ def _parse_args():
     parser.add_argument('--protocol', choices=['icmp', 'udp', 'tcp'])
     parser.add_argument('--remote-group-id')
     parser.add_argument('--direction', default='ingress')
+    parser.add_argument('--tenant-id', default=None)
     parser.add_argument('security_group_id')
     args = parser.parse_args()
     if args.max_port < args.min_port:
         sys.exit("max_port should be greater than min_port, exiting")
     return args
 
+def _create_sg(args):
+    # create security group
+    sg = {}
+    sg['security_group'] = {'name': args.security_group_id,
+                            'description': 'Flow flood security group',
+                            'tenant_id': args.tenant_id}
+    return sg
 
 def _gen_body(args):
     rules = []
@@ -24,11 +32,13 @@ def _gen_body(args):
             new_rule = {'security_group_rule': {}}
             new_rule['security_group_rule']['port_range_min'] = port_start
             new_rule['security_group_rule']['port_range_max'] = port_end
+            if args.tenant_id:
+                new_rule['security_group_id']['tenant_id'] = args.tenant_id
             for val in ['direction', 'protocol', 'remote_group_id',
                         'security_group_id']:
                 new_rule['security_group_rule'][val] = getattr(args, val)
             rules.append(new_rule)
-    data = {'security_groups': rules}
+    data = {'security_group_rules': rules}
     return data
 
 

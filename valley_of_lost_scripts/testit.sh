@@ -11,12 +11,13 @@ function run {
     # fetch token
     TOKEN_JSON=$(curl -O -X POST "http://$HOST:35357/v2.0/tokens" -H "Content-Type:application/json"  -d "{\"auth\":{\"passwordCredentials\":{\"username\": \"$USER\", \"password\": \"$PASSWORD\"}}}");
     TOKEN=$(cat tokens | python -c "import sys, json; print json.load(open('tokens', 'r'))['access']['token']['id']");
+    echo $TOKEN > token;
 
-    curl -i -X POST -H "X-Auth-Token:$TOKEN" -H "Content-Type:application/json" "http://$HOST:9696/v2.0/security-groups?tenant_id=$TENANT_ID" -d "$BODY";
+    curl -i -X POST -H "X-Auth-Token:$TOKEN" -H "Content-Type:application/json" "http://$HOST:9696/v2.0/security-group-rules" -d "$BODY";
 }
 
 function cleanup {
-    for f in [body,tokens]; do
+    for f in [body,tokens,token]; do
         rm $f;
     done
 }
