@@ -38,4 +38,4 @@ echo "dhcp-namespace is qdhcp-$DHCP_NS";
 
 init
 boot_vms
-update_with_huge_cidr
+#update_with_huge_cidr
