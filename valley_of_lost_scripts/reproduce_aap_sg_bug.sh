@@ -13,7 +13,7 @@ function init {
     neutron security-group-rule-create $FAKE_SG_ID --direction ingress --protocol tcp --port-range-max 22 --port-range-min 22;
     neutron net-create $NETWORK_NAME
     neutron subnet-create "$NETWORK_NAME" --name "$NETWORK_NAME-subnet" --gateway $GATEWAY $CIDR
-    neutron port-create $NETWORK_NAME --security-group=$ALL_ALLOWED_SG_ID
+#    neutron port-create $NETWORK_NAME --security-group=$ALL_ALLOWED_SG_ID
 }
 
 function boot_vms {
@@ -38,4 +38,4 @@ echo "dhcp-namespace is qdhcp-$DHCP_NS";
 
 init
 boot_vms
-#update_with_huge_cidr
+update_with_huge_cidr
