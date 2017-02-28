@@ -7,10 +7,12 @@ def _parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--min-port', type=int, default=1)
     parser.add_argument('--max-port', type=int, default=65535)
-    parser.add_argument('--protocol', choices=['icmp', 'udp', 'tcp'])
+    parser.add_argument('--protocol', choices=['icmp', 'udp', 'tcp'],
+                        default='tcp')
     parser.add_argument('--remote-group-id')
     parser.add_argument('--direction', default='ingress')
     parser.add_argument('--tenant-id', default=None)
+    parser.add_argument('--intersect', dest='intersect', action='store_true')
     parser.add_argument('security_group_id')
     args = parser.parse_args()
     if args.max_port < args.min_port:
@@ -27,17 +29,24 @@ def _create_sg(args):
 
 def _gen_body(args):
     rules = []
+
+    def _gen_rule(port_start, port_end):
+        new_rule = {'security_group_rule': {}}
+        new_rule['security_group_rule']['port_range_min'] = port_start
+        new_rule['security_group_rule']['port_range_max'] = port_end
+        if args.tenant_id:
+            new_rule['security_group_rule']['tenant_id'] = args.tenant_id
+        for val in ['direction', 'protocol', 'remote_group_id',
+                    'security_group_id']:
+            new_rule['security_group_rule'][val] = getattr(args, val)
+        return new_rule
+
     for port_start in range(args.min_port, args.max_port + 1):
-        for port_end in range(args.max_port, port_start - 1, -1):
-            new_rule = {'security_group_rule': {}}
-            new_rule['security_group_rule']['port_range_min'] = port_start
-            new_rule['security_group_rule']['port_range_max'] = port_end
-            if args.tenant_id:
-                new_rule['security_group_rule']['tenant_id'] = args.tenant_id
-            for val in ['direction', 'protocol', 'remote_group_id',
-                        'security_group_id']:
-                new_rule['security_group_rule'][val] = getattr(args, val)
-            rules.append(new_rule)
+        if args.intersect:
+            for port_end in range(args.max_port, port_start - 1, -1):
+                rules.append(_gen_rule(port_start, port_end))
+        else:
+            rules.append(_gen_rule(port_start, port_start))
     data = {'security_group_rules': rules}
     return data
 
