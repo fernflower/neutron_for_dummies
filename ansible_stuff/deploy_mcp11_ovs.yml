@@ -1,0 +1,6 @@
+- hosts: mcp
+  roles:
+    - mcp
+  vars:
+    model: virtual_mcp11_ovs
+    stack_name: mcp11

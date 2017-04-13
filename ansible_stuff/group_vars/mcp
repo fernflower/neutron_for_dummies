@@ -1,0 +1,10 @@
+project_dir: /home/dev-user
+user: dev-user
+ansible_ssh_user: dev-user
+openrc: /home/dev-user/devstack/openrc
+model: virtual_mcp11_ovs
+stack_name: mcp11
+public_key_file: /home/dev-user/.ssh/id_rsa_mcp.pub
+private_key_file: /home/dev-user/.ssh/id_rsa_mcp
+mcp_repo: git@github.com:Mirantis/mk-lab-heat-templates.git
+openrc: openrc

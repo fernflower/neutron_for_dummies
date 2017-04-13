@@ -1,0 +1,68 @@
+- include_vars: mcp_secret.yml
+
+- apt: update-cache=yes
+  sudo: yes
+
+- name: install necessary packages
+  apt: name={{item}} state=latest
+  with_items:
+    - git
+    - python-dev
+    - python-pip
+  sudo: yes
+
+- name: install openstackclient and co
+  pip: name={{item}}
+  with_items:
+    - python-openstackclient
+    - python-heatclient
+    - pytz
+    - pbr
+    - wrapt
+    - requestsexceptions
+    - appdirs
+    - rfc3986
+    - positional
+    - pyparsing
+    - debtcollector
+    - oslo.config
+    - monotonic
+  sudo: yes
+
+# XXX FIXME maybe optimize?
+- name: populate public_key variable
+  command: "cat {{public_key_file}}"
+  register: pub_key_output
+- debug: public_key="{{pub_key_output.stdout}}"
+- set_fact: git_public_key="{{pub_key_output.stdout}}"
+
+- name: populate private_key variable
+  command: "cat {{private_key_file}}"
+  register: priv_key_output
+- debug: private_key="{{priv_key_output.stdout}}"
+- set_fact: git_private_key="{{priv_key_output.stdout}}"
+
+- name: Setup the Git repo
+  git: repo={{mcp_repo}} dest="{{project_dir}}/mk-lab-heat-templates" accept_hostkey=yes key_file="{{private_key_file}}" update=no
+
+- name: checkout repo with heat templates
+  git: repo=https://github.com/Mirantis/mk-lab-heat-templates dest="{{project_dir}}/mk-lab-heat-templates" update=no
+
+- name: generate tpicek.env
+  template: src="{{model}}.j2" dest="{{project_dir}}/mk-lab-heat-templates/env/{{model}}/tcpisek.env"
+
+- name: generate openrc
+  template: src="{{openrc}}.j2" dest="{{project_dir}}/openrc"
+
+- name: launch heat stack creation
+  shell: ". ../openrc && bash stack.sh create {{model}} tcpisek {{stack_name}}"
+  args:
+    chdir: "{{project_dir}}/mk-lab-heat-templates"
+
+- name: wait until list stack reaches CREATE_COMPLETE state or timeouts
+  action:
+      shell ". {{project_dir}}/openrc && openstack stack show {{stack_name}} | grep CREATE_COMPLETE"
+  register: stack_list
+  until: stack_list.stdout.find("CREATE_COMPLETE") != -1
+  retries: 10
+  delay: 60
