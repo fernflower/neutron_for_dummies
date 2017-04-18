@@ -1,0 +1,31 @@
+
+resource_registry:
+  "MCP::BaseNetwork": ../../template/_infra_net_create4.yaml
+  "MCP::SaltMaster": ../../template/_salt_master_pkg.yaml
+  "MCP::ServerInstance": ../../template/_server_instance_single.yaml
+  "MCP::ServerInstance4": ../../template/_server_instance_single4.yaml
+  "MCP::MultipleInstances4": ../../template/_server_instance_multi4.yaml
+  "MCP::ServiceInstance": ../../template/_service_instance_single.yaml
+  "MCP::StaticCluster": ../../template/_server_cluster_static.yaml
+  "MCP::StaticClusterMember": ../../template/_server_instance_cluster.yaml
+  "MCP::PolicyCluster": ../../template/_server_cluster_policy.yaml
+  "MCP::PolicyClusterMember": ../../template/_server_instance_policy.yaml
+
+parameters:
+  public_net: ext_float
+  key_private: "|
+  {{ git_private_key }}"
+  key_value: {{ git_public_key }}
+  cfg_image: ubuntu-16.04-server-cloudimg
+  cfg_flavor: m1.large
+  cfg_reclass_branch: master
+  ctl_image: ubuntu-16.04-server-cloudimg
+  ctl_flavor: m1.large
+  gtw_image: ubuntu-16.04-server-cloudimg
+  gtw_flavor: m1.medium
+  prx_image: ubuntu-16.04-server-cloudimg
+  prx_flavor: m1.medium
+  cmp_image: ubuntu-16.04-server-cloudimg
+  cmp_flavor: m1.large
+  mon_image: ubuntu-16.04-server-cloudimg
+  mon_flavor: m1.medium

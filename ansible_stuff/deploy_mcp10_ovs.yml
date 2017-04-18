@@ -1,0 +1,6 @@
+- hosts: mcp
+  roles:
+    - mcp
+  vars:
+    model: virtual_mcp10_ovs
+    stack_name: mcp10_42

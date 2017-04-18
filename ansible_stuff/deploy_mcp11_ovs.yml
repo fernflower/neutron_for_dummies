@@ -3,4 +3,4 @@
     - mcp
   vars:
     model: virtual_mcp11_ovs
-    stack_name: mcp11
+    stack_name: mcp11_42

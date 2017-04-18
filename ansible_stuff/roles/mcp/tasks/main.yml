@@ -33,7 +33,7 @@
 - name: populate public_key variable
   command: "cat {{public_key_file}}"
   register: pub_key_output
-- debug: public_key="{{pub_key_output.stdout}}"
+- debug: var="{{pub_key_output.stdout}}"
 - set_fact: git_public_key="{{pub_key_output.stdout}}"
 
 - name: populate private_key variable
@@ -54,15 +54,33 @@
 - name: generate openrc
   template: src="{{openrc}}.j2" dest="{{project_dir}}/openrc"
 
-- name: launch heat stack creation
+- name: check for existing deployment
+  shell: ". {{project_dir}}/openrc && openstack stack show {{stack_name}} -c stack_status | grep CREATE_"
+  register: deployment_exists
+  ignore_errors: True
+
+- name: launch heat stack creation if stack doesn't exist
   shell: ". ../openrc && bash stack.sh create {{model}} tcpisek {{stack_name}}"
   args:
     chdir: "{{project_dir}}/mk-lab-heat-templates"
+  when: deployment_exists.stderr.find("Stack not found") != -1
 
 - name: wait until list stack reaches CREATE_COMPLETE state or timeouts
   action:
       shell ". {{project_dir}}/openrc && openstack stack show {{stack_name}} | grep CREATE_COMPLETE"
   register: stack_list
   until: stack_list.stdout.find("CREATE_COMPLETE") != -1
-  retries: 10
-  delay: 60
+  retries: 20
+  delay: 120
+  when: deployment_exists.stderr.find("Stack not found") != -1
+
+- name: fetch salt master ip
+  shell: ". {{project_dir}}/openrc && openstack stack show {{stack_name}} -c outputs | grep output_value | awk '{print $4}'"
+  register: salt_master_ip_var
+
+- set_fact: salt_master={{salt_master_ip_var.stdout}}
+
+- debug: msg="salt master ip is {{salt_master}}"
+
+- name: copy salt master configuration script
+  copy: src=configure_salt_master.sh dest="{{project_dir}}/configure_salt_master.sh"
