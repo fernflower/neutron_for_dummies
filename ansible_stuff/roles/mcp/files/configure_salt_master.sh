@@ -46,10 +46,68 @@ function deploy_memcached {
     salt -C 'I@memcached:server' state.sls memcached
 }
 
-deploy_keepalived
-deploy_ntp
-deploy_glusterfs
-deploy_rabbitmq
-deploy_galera
-deploy_haproxy
-deploy_memcached
+function deploy_keystone {
+    salt -C 'I@keystone:server' state.sls keystone.server -b 1
+    salt -C 'I@keystone:client' state.sls keystone.client
+    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc; keystone service-list"
+}
+
+function deploy_glance {
+    salt -C 'I@glance:server' state.sls glance -b 1
+    salt -C 'I@glance:server' state.sls glusterfs.client
+    salt -C 'I@keystone:server' state.sls keystone.server
+    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc; glance image-list"
+}
+
+function deploy_nova {
+    salt -C 'I@nova:controller' state.sls nova -b 1
+    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc; nova service-list"
+    ssh ctl01 "source keystonerc; nova service-list"
+}
+
+function deploy_neutron {
+    salt -C 'I@neutron:server' state.sls neutron -b 1
+    salt -C 'I@neutron:gateway' state.sls neutron
+    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc; neutron agent-list"
+}
+
+function deploy_horizon {
+    salt -C 'I@horizon:server' state.sls horizon
+    salt -C 'I@nginx:server' state.sls nginx
+}
+
+function deploy_proxy_nodes {
+    # add NAT to br2
+    iptables -t nat -A POSTROUTING -o br2 -j MASQUERADE
+    echo “1” > /proc/sys/net/ipv4/ip_forward
+    iptables-save > /etc/iptables/rules.v4
+    # deploy linux/openssh etc
+    salt 'prx*' state.sls linux,openssh,salt
+    # XXX verify connection to horizon
+}
+
+function run {
+    SERVICES=$1;
+    for service in ${SERVICES[@]}; do
+        output="out"
+        echo "Running $service...";
+        eval "$service" 2>&1 > $output;
+        failed=$(cat "$output" | grep 'Failed:' | awk '{if ($2 != 0) {print $2}}');
+        if [[ "$failed" ]] ; then
+            echo "$service failed!";
+            mv out "error_$service";
+            exit 1;
+        else
+            echo "$service finished without errors";
+            rm out
+        fi
+    done
+}
+
+DEPLOY_SUPPORT_SERVICES=("deploy_keepalived" "deploy_ntp" "deploy_glusterfs" "deploy_rabbitmq" \
+                         "deploy_galera" "deploy_haproxy" "deploy_memcached")
+
+DEPLOY_OPENSTACK=("deploy_keystone" "deploy_glance" "deploy_nova" "deploy_neutron" "deploy_horizon" "deploy_proxy_nodes")
+
+run $DEPLOY_SUPPORT_SERVICES;
+run $DEPLOY_OPENSTACK;

@@ -67,10 +67,10 @@
 
 - name: wait until list stack reaches CREATE_COMPLETE state or timeouts
   action:
-      shell ". {{project_dir}}/openrc && openstack stack show {{stack_name}} | grep CREATE_COMPLETE"
+    shell ". {{project_dir}}/openrc && openstack stack show -c stack_status {{stack_name}}"
   register: stack_list
   until: stack_list.stdout.find("CREATE_COMPLETE") != -1
-  retries: 20
+  retries: 10
   delay: 120
   when: deployment_exists.stderr.find("Stack not found") != -1
 
