@@ -48,8 +48,10 @@ function deploy_memcached {
 
 function deploy_keystone {
     salt -C 'I@keystone:server' state.sls keystone.server -b 1
+    sudo salt '*' apache.signal restart
     salt -C 'I@keystone:client' state.sls keystone.client
-    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc; keystone service-list"
+    # mcp 1.1 doesn't have python-keystoneclient on controllers, will use osc instead
+    salt -C 'I@keystone:server' cmd.run ". /root/keystonerc && openstack service list"
 }
 
 function deploy_glance {
@@ -77,17 +79,30 @@ function deploy_horizon {
 }
 
 function deploy_proxy_nodes {
+    # XXX how on earth it is supposed to be done and where?!
     # add NAT to br2
-    iptables -t nat -A POSTROUTING -o br2 -j MASQUERADE
-    echo “1” > /proc/sys/net/ipv4/ip_forward
-    iptables-save > /etc/iptables/rules.v4
+    # iptables -t nat -A POSTROUTING -o br2 -j MASQUERADE
+    # echo “1” > /proc/sys/net/ipv4/ip_forward
+    # iptables-save > /etc/iptables/rules.v4
     # deploy linux/openssh etc
     salt 'prx*' state.sls linux,openssh,salt
     # XXX verify connection to horizon
 }
 
+function provision_compute_nodes {
+    salt '*cfg*' state.sls reclass.storage
+    for num in $(seq "$COMPUTES"); do
+        salt "*cmp0$num*" test.ping
+    done
+    # XXX damn me, this should be run till it succeeds regarding of failures
+    for num in $(seq "$COMPUTES"); do
+        salt "*cmp0$num*" state.highstate
+    done
+}
+
 function run {
-    SERVICES=$1;
+    name=$1[@];
+    SERVICES=("${!name}");
     for service in ${SERVICES[@]}; do
         output="out"
         echo "Running $service...";
@@ -104,10 +119,15 @@ function run {
     done
 }
 
+COMPUTES=2
+
 DEPLOY_SUPPORT_SERVICES=("deploy_keepalived" "deploy_ntp" "deploy_glusterfs" "deploy_rabbitmq" \
                          "deploy_galera" "deploy_haproxy" "deploy_memcached")
 
 DEPLOY_OPENSTACK=("deploy_keystone" "deploy_glance" "deploy_nova" "deploy_neutron" "deploy_horizon" "deploy_proxy_nodes")
 
-run $DEPLOY_SUPPORT_SERVICES;
-run $DEPLOY_OPENSTACK;
+DEPLOY_COMPUTES=("provision_compute_nodes")
+
+run "DEPLOY_SUPPORT_SERVICES";
+run "DEPLOY_OPENSTACK";
+run "DEPLOY_COMPUTES"
