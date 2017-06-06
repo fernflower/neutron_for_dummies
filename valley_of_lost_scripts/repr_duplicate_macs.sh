@@ -62,10 +62,12 @@ function create_phys_nets_vms {
     openstack network create net1 --provider-network-type vlan --provider-physical-network test --provider-segment 101
     openstack subnet create subnet0 --network net0 --subnet-range 10.0.4.0/24
     openstack subnet create subnet1 --network net1 --subnet-range 10.0.5.0/24
+    neutron security-group-create SG;
+    neutron security-group-rule-create SG;
     openstack port create port0 --network net0 --mac-address fa:16:3e:d7:56:3d --security-group SG
     openstack port create port1 --network net1 --mac-address fa:16:3e:d7:56:3d --security-group SG
-    openstack server create vm0 --flavor ds512M --image cirros-0.3.5-x86_64-disk --nic port-id=port0 --wait
-    openstack server create vm1 --flavor ds512M --image cirros-0.3.5-x86_64-disk --nic port-id=port1 --wait
+    openstack server create vm0 --flavor 1 --image cirros-0.3.5-x86_64-disk --nic port-id=port0 --wait
+    openstack server create vm1 --flavor 1 --image cirros-0.3.5-x86_64-disk --nic port-id=port1 --wait
 }
 
 #setup
@@ -74,6 +76,5 @@ function create_phys_nets_vms {
 #assign_sg
 #ping
 
-setup
 create_phys_bridge
 create_phys_nets_vms
