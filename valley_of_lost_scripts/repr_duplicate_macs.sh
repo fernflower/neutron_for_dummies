@@ -38,8 +38,12 @@ function create_vms {
 }
 
 function assign_sg {
-    neutron security-group-create $SG;
-    neutron security-group-rule-create $SG;
+    exists=$(neutron security-group-list | grep $SG)
+    if ! [[ $exists ]]; then
+        echo "No security group $SG found"
+        neutron security-group-create $SG;
+        neutron security-group-rule-create $SG;
+    fi
     for num in {0,1,2}; do
         port="port$(($START_PORT_NUM + $num))"
         port_id=$(neutron port-list | grep $port | awk '{print $2}')
@@ -73,7 +77,10 @@ function cleanup_dhcp {
         neutron net-delete $net
     done
     # delete security-group
-    neutron security-group-delete $SG
+    for sg_id in $(neutron security-group-list | grep $SG | awk '{print $2}'); do
+        echo "Deleting security group $sg..."
+        neutron security-group-delete $sg_id;
+    done
 }
 
 function create_phys_bridge {
@@ -93,16 +100,13 @@ function create_phys_nets_vms {
         net="$NET_PREFIX_PHYS$num"
         subnet="subnet$num"
         cidr="42.42.$(($num)).0/24"
-        openstack network create $net --provider-network-type vlan --provider-physical-network test --provider-segment 100
+        vlan=$((100 + $num))
+        openstack network create $net --provider-network-type vlan --provider-physical-network test --provider-segment $vlan
         openstack subnet create $subnet --network $net --subnet-range $cidr
     done
-    exists=$(neutron security-group-list | grep $SG)
-    if ![[ $exists ]]; then
-        echo "No security froup $SG found, will create one"
-        neutron security-group-create $SG
-        # allow all
-        neutron security-group-rule-create $SG
-    fi
+    neutron security-group-create $SG
+    # allow all
+    neutron security-group-rule-create $SG
     for num in {0,1}; do
         net="$NET_PREFIX_PHYS$num"
         port="port_phys$num"
@@ -114,6 +118,7 @@ function create_phys_nets_vms {
 }
 
 function cleanup_phys_br {
+    echo "Cleaning up for phys_br test"
     for num in {0,1}; do
         vm="vm$num"
         port="port_phys$num"
@@ -125,8 +130,16 @@ function cleanup_phys_br {
         # delete network
         neutron net-delete $net
     done
-    sudo ip link delete port0 
-    sudo ovs-vsctl del-br br-test
+    # delete security-group
+    for sg_id in $(neutron security-group-list | grep $SG | awk '{print $2}'); do
+        echo "Deleting security group $sg..."
+        neutron security-group-delete $sg_id;
+    done
+    if [[ $1 == "all" ]]; then
+        echo "Deleting test-br and linux interface as well"
+        sudo ip link delete port0
+        sudo ovs-vsctl del-br br-test
+    fi
 }
 
 function ping_phys_br {
@@ -138,20 +151,20 @@ function ping_phys_br {
 }
 
 function testcase_dhcp {
-    cleanup_dhcp
     setup
     create_vms_ports
     assign_sg
     create_vms
     ping_dhcp
+    cleanup_dhcp
 }
 
 function testcase_vlan_phys_br {
-    cleanup_phys_br
     create_phys_bridge
     create_phys_nets_vms
-    # ping_phys_br
+    ping_phys_br
+    cleanup_phys_br
 }
 
-# testcase_dhcp
+testcase_dhcp
 testcase_vlan_phys_br
