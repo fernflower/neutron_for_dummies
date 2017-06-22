@@ -38,10 +38,6 @@
   always_run: True
   changed_when: False
 
-- name: echo devstack admin password
-  shell: echo {{check_password_set.stdout}} | cut -d= -f2
-  register: devstack_admin_pass
-
 - name: check for devstack screen session
   shell: screen -ls stack | awk '$0~/No Sockets found/{print "no session"}'
   register: screen_session_exists
@@ -49,13 +45,3 @@
 - name: run stack.sh
   shell: bash "{{project_dir}}/devstack/stack.sh"
   when: screen_session_exists.stdout == "no session"
-
-- name: configure for functional testing
-  shell: bash "{{project_dir}}/neutron/tools/configure_for_func_testing.sh" "{{project_dir}}/devstack" -i
-  environment:
-      DATABASE_PASSWORD: "{{devstack_admin_pass.stdout}}"
-      MYSQL_PASSWORD: "{{devstack_admin_pass.stdout}}"
-
-- name: change rabbitmq user password for devstack's one
-  shell: rabbitmqctl change_password stackrabbit "{{devstack_admin_pass.stdout}}"
-  sudo: yes

@@ -1,13 +1,8 @@
-- hosts: nodes
-  roles:
-    - kernel44
-
-# prior to deploying computes/network nodes make sure that
-# controllers are up and running
 # XXX FIXME currently no HA deployments, 1 controller only
 - hosts: controllers
   roles:
     - neutron_devstack
+    - neutron_functional_tests
   vars:
     localrc: neutron_controller_localrc
 
@@ -16,15 +11,3 @@
     - neutron_devstack
   vars:
     localrc: neutron_compute_localrc
-
-- hosts: network
-  roles:
-    - neutron_devstack
-  vars:
-    localrc: neutron_network_devstack
-
-# don't update ovs alongwith kernel update so that mos repos
-# don't interfere with devstack dependencies
-- hosts: nodes
-  roles:
-    - ovs26_trusty

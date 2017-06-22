@@ -9,8 +9,9 @@ HOST_IP={{inventory_hostname}}
 #NEUTRON_BRANCH=stable/mitaka
 #FIXED_RANGE=172.31.1.0/24
 #FLOATING_RANGE=192.168.20.0/25
+MULTI_HOST=True
 
-# disable nove networking
+# disable nova networking
 disable_service n-net
 # enable neutron
 enable_service q-svc q-agt q-dhcp q-l3 q-meta
