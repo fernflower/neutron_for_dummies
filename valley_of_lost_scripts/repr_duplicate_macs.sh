@@ -2,6 +2,22 @@ NET_PREFIX_DHCP="mac_net_dhcp"
 NET_PREFIX_PHYS="mac_net_phys"
 START_PORT_NUM=100500
 SG="mac_sg"
+FLAVOR="mac_sg.small"
+IMAGE="damnit"
+
+function setup_image_flavor {
+    if [[ $(glance image-list | grep $IMAGE) ]]; then
+        echo "Image $IMAGE exists, not fetching one"
+    else
+        wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
+	openstack image create --public --file ./cirros-0.3.5-x86_64-disk.img $IMAGE
+    fi
+    if [[ $(openstack flavor list | grep $FLAVOR) ]]; then
+	echo "Flavor $FLAVOR exists, not creating one"
+    else
+	openstack flavor create --ram 1024 --disk 4 --vcpus 1 $FLAVOR
+    fi
+}
 
 function setup {
     for num in {0,1,2}; do
@@ -28,11 +44,10 @@ function create_vms_ports {
 }
 
 function create_vms {
-    cirros_img="$(glance image-list | grep cirros | awk '{print $2}')"
     for num in {0,1,2}; do
         port="port$(( $START_PORT_NUM + $num))"
         vm="vm$port"
-        openstack server create --flavor 1 --image $cirros_img --nic port-id=$port  --wait $vm
+        openstack server create --flavor $FLAVOR --image $IMAGE --nic port-id=$port  --wait $vm
     done
     openstack server list
 }
@@ -113,7 +128,7 @@ function create_phys_nets_vms {
         vm="vm$num"
         mac=fa:16:3e:d7:56:3d 
         openstack port create $port --network $net --mac-address fa:16:3e:d7:56:3d --security-group $SG
-        openstack server create $vm --flavor 1 --image cirros-0.3.5-x86_64-disk --nic port-id=$port --wait
+        openstack server create $vm --flavor $FLAVOR --image $IMAGE nic port-id=$port --wait
     done
 }
 
@@ -166,5 +181,6 @@ function testcase_vlan_phys_br {
     cleanup_phys_br
 }
 
+setup_image_flavor
 testcase_dhcp
-testcase_vlan_phys_br
+# testcase_vlan_phys_br
