@@ -4,6 +4,25 @@ START_PORT_NUM=100500
 SG="mac_sg"
 FLAVOR="mac_sg.small"
 IMAGE="damnit"
+EXTERNAL="external"
+EXT_BR="br-floating"
+EXT_CIDR="10.90.1.0/24"
+ALLOCATION_POOL_START="10.90.1.220"
+ALLOCATION_POOL_END="10.90.1.230"
+EXT_ROUTER="router_$EXTERNAL"
+
+
+function create_external {
+    if [[ $(neutron net-list | grep $EXTERNAL)  ]]; then
+        echo "External network $EXTERNAL already exists, not creating one"
+    else
+        ext_net="$EXTERNAL"
+        neutron net-create $ext_net --shared --provider:network_type flat --provider:physical_network br-floating --router:external=True
+        neutron subnet-create $ext_net $EXT_CIDR --allocation-pool "start=$ALLOCATION_POOL_START,end=$ALLOCATION_POOL_END"
+        neutron router-create $EXT_ROUTER
+        neutron router-gateway-set $EXT_ROUTER $ext_net
+    fi
+}
 
 function setup_image_flavor {
     if [[ $(glance image-list | grep $IMAGE) ]]; then
@@ -26,6 +45,8 @@ function setup {
         cidr="10.0.$((42 + $num)).0/24"
         openstack network create $net;
         openstack subnet create --network $net --subnet-range $cidr $subnet
+        # add interface to router
+        neutron router-interface-add $EXT_ROUTER $subnet
     done
 }
 
@@ -40,6 +61,8 @@ function create_vms_ports {
         port_number=$(($num + $START_PORT_NUM))
         port="port$port_number"
         openstack port create --network $net --mac-address "$mac" $port
+        # assign floatingip
+        neutron floatingip-create --port-id $(neutron port-list | grep $port | awk '{print $2}') $EXTERNAL
     done
 }
 
@@ -77,6 +100,11 @@ function ping_dhcp {
 }
 
 function cleanup_dhcp {
+    # unassing and delete all floatings
+    # XXX may affect other ips
+    for fip in $(neutron floatingip-list | awk '{print $2}'); do
+        neutron floatingip-delete $fip;
+    done
     for num in {0,1,2}; do
         # delete vm
         port="port$(( $START_PORT_NUM + $num))"
@@ -88,6 +116,8 @@ function cleanup_dhcp {
         neutron port-delete $port
         # delete subnet
         neutron subnet-delete $subnet
+        # remove router interface
+        neutron router-interface-delete $EXT_ROUTER $subnet
         # delete network
         neutron net-delete $net
     done
@@ -171,7 +201,7 @@ function testcase_dhcp {
     assign_sg
     create_vms
     ping_dhcp
-    cleanup_dhcp
+    # cleanup_dhcp
 }
 
 function testcase_vlan_phys_br {
@@ -181,6 +211,8 @@ function testcase_vlan_phys_br {
     cleanup_phys_br
 }
 
+cleanup_dhcp
+create_external
 setup_image_flavor
 testcase_dhcp
 # testcase_vlan_phys_br
