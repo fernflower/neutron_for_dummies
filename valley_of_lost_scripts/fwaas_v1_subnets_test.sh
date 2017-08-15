@@ -60,6 +60,7 @@ function create_vms_ports {
         port_number=$(($num + $START_PORT_NUM))
         port="port$port_number"
         openstack port create --network $net $port
+        openstack port-update $port --no-security-group
     done
 }
 
@@ -131,7 +132,7 @@ function testcase_dhcp {
     assign_sg
     create_vms
     ping_dhcp
-    cleanup_dhcp
+#    cleanup_dhcp
 }
 
 setup_image_flavor
