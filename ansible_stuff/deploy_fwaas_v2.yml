@@ -1,0 +1,5 @@
+- hosts: devstack_vms
+  roles:
+      - neutron_devstack
+  vars:
+    localrc: neutron_fwaasv2_localrc

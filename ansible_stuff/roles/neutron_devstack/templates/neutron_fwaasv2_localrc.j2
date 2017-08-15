@@ -1,0 +1,21 @@
+LOGFILE=$DEST/logs/stack.sh.log
+
+ADMIN_PASSWORD=secretrabbit
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+#NEUTRON_REPO=https://review.openstack.org/p/openstack/neutron
+#NEUTRON_BRANCH=stable/ocata
+#FIXED_RANGE=172.31.1.0/24
+#FLOATING_RANGE=192.168.20.0/25
+
+# disable nova networking
+disable_service n-net
+# enable neutron
+enable_service q-svc q-agt q-dhcp q-l3 q-meta
+
+# configure fwaas
+enable_plugin neutron-fwaas https://git.openstack.org/openstack/neutron-fwaas
+# This can be used to deploy specific version
+# enable_plugin neutron-fwaas https://review.openstack.org/p/openstack/neutron-fwaas refs/changes/50/214350/14
+enable_service q-fwaas-v2
