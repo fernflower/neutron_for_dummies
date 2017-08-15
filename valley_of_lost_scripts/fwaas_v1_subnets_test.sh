@@ -59,8 +59,7 @@ function create_vms_ports {
         net="$NET_PREFIX_DHCP$num"
         port_number=$(($num + $START_PORT_NUM))
         port="port$port_number"
-        openstack port create --network $net $port
-        openstack port-update $port --no-security-group
+        openstack port create --network $net $port --no-security-group
     done
 }
 
@@ -78,7 +77,7 @@ function assign_sg {
     if ! [[ $exists ]]; then
         echo "No firewall group $SG found"
         icmp_rule_id=$(neutron firewall-rule-create --action allow --protocol icmp --name icmp_ok  -c id | tail -n2 | xargs | awk '{print $4}');
-        icmp_policy="policy_$SG";
+        icmp_policy="icmp_$SG";
         neutron firewall-policy-create $icmp_policy --firewall-rules $icmp_rule_id;
         neutron firewall-create --name $SG $icmp_policy;
     fi
@@ -119,10 +118,20 @@ function cleanup_dhcp {
         # delete network
         neutron net-delete $net
     done
-    # delete security-group
-    for sg_id in $(neutron security-group-list | grep $SG | awk '{print $2}'); do
-        echo "Deleting security group $sg..."
-        neutron security-group-delete $sg_id;
+    # delete firewall group
+    for sg_id in $(neutron firewall-list | grep $SG | awk '{print $2}'); do
+        echo "Deleting firewall $sg_id..."
+        neutron firewall-delete $sg_id;
+    done
+    # delete firewall policies
+    for sg_id in $(neutron firewall-policy-list | grep $SG | awk '{print $2}'); do
+        echo "Deleting firewall policy $sg_id..."
+        neutron firewall-policy-delete $sg_id;
+    done
+    # delete all firewall rules
+    for sg_id in $(neutron firewall-rule-list | awk '{print $2}'); do
+        echo "Deleting firewall rule $sg_id..."
+        neutron firewall-rule-delete $sg_id;
     done
 }
 
@@ -135,5 +144,6 @@ function testcase_dhcp {
 #    cleanup_dhcp
 }
 
+# cleanup_dhcp
 setup_image_flavor
 testcase_dhcp
