@@ -1,3 +1,4 @@
 - hosts: devstack_vms
   roles:
       - neutron_devstack
+      - neutron_functional_tests

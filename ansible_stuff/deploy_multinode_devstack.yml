@@ -2,7 +2,6 @@
 - hosts: controllers
   roles:
     - neutron_devstack
-    - neutron_functional_tests
   vars:
     localrc: neutron_controller_localrc
 
