@@ -50,16 +50,11 @@ function setup {
 }
 
 function create_vms_ports {
-    net_num=0
-    net="$NET_PREFIX_DHCP$net_num"
-    port="port$START_PORT_NUM"
-    openstack port create --network $net $port
-    mac="$( openstack port show $port | awk '/ mac_address / { print $4 }' )"
-    for num in {1,2}; do
+    for num in {0,1,2}; do
         net="$NET_PREFIX_DHCP$num"
         port_number=$(($num + $START_PORT_NUM))
         port="port$port_number"
-        openstack port create --network $net $port
+        openstack port create --network $net $port --security-group $SG
     done
 }
 
@@ -72,18 +67,24 @@ function create_vms {
     openstack server list
 }
 
-function assign_sg {
+function setup_firewall_sg {
+    # create security group with all allowed
+    exists=$(neutron security-group-list | grep $SG)
+    if ! [[ $exists ]]; then
+        echo "No security group $SG found"
+        neutron security-group-create $SG;
+        neutron security-group-rule-create $SG;
+    fi
+
     exists=$(openstack firewall group list | grep $SG)
     if ! [[ $exists ]]; then
         echo "No firewall group $SG found"
-        icmp_rule_id=$(openstack firewall group rule create --action allow --protocol icmp --name icmp_ok | grep ID | awk '{print $4}');
+        icmp_rule_id=$(openstack firewall group rule create --action allow --protocol icmp --name icmp_ok_$SG | grep ID | awk '{print $4}');
         icmp_policy="policy$SG"
         openstack firewall group policy create $icmp_policy --firewall-rule $icmp_rule_id;
         openstack firewall group create --name $SG --ingress-firewall-policy $icmp_policy;
     fi
-    for num in {0,1,2}; do
-        port="port$(($START_PORT_NUM + $num))"
-        port_id=$(neutron port-list | grep $port | awk '{print $2}')
+    for port_id in $(neutron router-port-list $EXT_ROUTER | grep 10.0.4 | awk '{print $2}'); do
         openstack firewall group set --port $port_id $SG;
     done
 }
@@ -120,22 +121,36 @@ function cleanup_dhcp {
         # delete network
         neutron net-delete $net
     done
-    # delete security-group
+    # delete firewall group
+    for sg_id in $(openstack firewall group list | grep $SG | awk '{print $2}'); do
+        echo "Deleting firewall $sg_id..."
+        openstack firewall group delete $sg_id;
+    done
+    # delete firewall policies
+    for sg_id in $(openstack firewall group policy list | grep $SG | awk '{print $2}'); do
+        echo "Deleting firewall policy $sg_id..."
+        openstack firewall group policy delete $sg_id;
+    done
+    # delete all firewall rules
+    for sg_id in $(openstack firewall group rule list | awk '{print $2}'); do
+        echo "Deleting firewall rule $sg_id..."
+        openstack firewall group rule delete $sg_id;
+    done
+    # delete security group
     for sg_id in $(neutron security-group-list | grep $SG | awk '{print $2}'); do
-        echo "Deleting security group $sg..."
         neutron security-group-delete $sg_id;
     done
 }
 
 function testcase_dhcp {
     setup
+    setup_firewall_sg
     create_vms_ports
-    assign_sg
-#    create_vms
-#    ping_dhcp
+    create_vms
+    ping_dhcp
 #    cleanup_dhcp
 }
 
-cleanup_dhcp
+#cleanup_dhcp
 setup_image_flavor
 testcase_dhcp
