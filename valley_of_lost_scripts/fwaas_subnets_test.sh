@@ -9,6 +9,7 @@ EXT_CIDR="10.90.1.0/24"
 ALLOCATION_POOL_START="10.90.1.220"
 ALLOCATION_POOL_END="10.90.1.230"
 EXT_ROUTER="router1"
+OPENRC="/home/dev-user/devstack/openrc"
 
 
 function create_external {
@@ -24,17 +25,20 @@ function create_external {
 }
 
 function setup_image_flavor {
+    save_user=$(echo $OS_USERNAME);
+    save_project=$(echo $OS_PROJECT_NAME);
     if [[ $(glance image-list | grep $IMAGE) ]]; then
         echo "Image $IMAGE exists, not fetching one"
     else
         wget http://download.cirros-cloud.net/0.3.5/cirros-0.3.5-x86_64-disk.img
-	openstack image create --public --file ./cirros-0.3.5-x86_64-disk.img $IMAGE
+        source "$OPENRC" admin admin && openstack image create --public --file ./cirros-0.3.5-x86_64-disk.img $IMAGE;
     fi
     if [[ $(openstack flavor list | grep $FLAVOR) ]]; then
-	echo "Flavor $FLAVOR exists, not creating one"
+	    echo "Flavor $FLAVOR exists, not creating one"
     else
-	openstack flavor create --ram 1024 --disk 4 --vcpus 1 $FLAVOR
+	    source "$OPENRC" admin admin && openstack flavor create --ram 1024 --disk 4 --vcpus 1 $FLAVOR;
     fi
+    source "$OPENRC" $save_user $save_project;
 }
 
 function setup {
@@ -124,6 +128,8 @@ function cleanup_dhcp {
     # delete firewall group
     for sg_id in $(openstack firewall group list | grep $SG | awk '{print $2}'); do
         echo "Deleting firewall $sg_id..."
+        # don't know why but need to disable fwg first
+        openstack firewall group set --disable $sg_id;
         openstack firewall group delete $sg_id;
     done
     # delete firewall policies
@@ -132,9 +138,9 @@ function cleanup_dhcp {
         openstack firewall group policy delete $sg_id;
     done
     # delete all firewall rules
-    for sg_id in $(openstack firewall group rule list | awk '{print $2}'); do
-        echo "Deleting firewall rule $sg_id..."
-        openstack firewall group rule delete $sg_id;
+    for id in $(openstack firewall group rule list | grep $SG | awk '{print $2}'); do
+        echo "Deleting firewall rule $id..."
+        openstack firewall group rule delete $id;
     done
     # delete security group
     for sg_id in $(neutron security-group-list | grep $SG | awk '{print $2}'); do
@@ -143,6 +149,7 @@ function cleanup_dhcp {
 }
 
 function testcase_dhcp {
+    echo "openrc: user=$OS_USERNAME, project=$OS_PROJECT_NAME"
     setup
     setup_firewall_sg
     create_vms_ports
@@ -151,6 +158,6 @@ function testcase_dhcp {
 #    cleanup_dhcp
 }
 
-#cleanup_dhcp
+cleanup_dhcp
 setup_image_flavor
 testcase_dhcp
