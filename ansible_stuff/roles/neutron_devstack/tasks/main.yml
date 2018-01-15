@@ -6,19 +6,12 @@
   with_items:
       - git
       - git-review
-      - ack-grep
       - build-essential
       - python2.7
       - language-pack-ru
-      - vim
   sudo: yes
 
-- include: install_python3.yml
-
 - include: basic_tweaks.yml
-
-- name: run BundleInstall
-  command: vim +BundleInstall +qall
 
 - name: checkout devstack repo
   git: repo=https://git.openstack.org/openstack-dev/devstack dest="{{project_dir}}/devstack" update=no

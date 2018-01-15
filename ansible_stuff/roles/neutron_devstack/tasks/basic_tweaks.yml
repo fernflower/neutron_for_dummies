@@ -1,4 +1,11 @@
 # Configures vim/git/etc for pleasant user experience
+- name: install system dependencies
+  apt: name={{item}} state=latest
+  with_items:
+      - ack-grep
+      - vim
+  sudo: yes
+
 - name: clone repo with nice vim config
   git: repo=https://github.com/fernflower/vim-quickstart.git dest="/home/{{user}}/.vim" update=no
 
@@ -10,3 +17,7 @@
 
 - name: set proper git editor
   command: git config --global core.editor "vim"
+
+- name: run BundleInstall
+  command: vim +BundleInstall +qall
+
