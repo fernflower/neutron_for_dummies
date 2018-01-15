@@ -1,0 +1,11 @@
+- hosts: controllers
+  roles:
+    - neutron_devstack
+  vars:
+    localrc: neutron_controller_dvr_localrc
+
+- hosts: computes
+  roles:
+    - neutron_devstack
+  vars:
+    localrc: neutron_compute_dvr_localrc

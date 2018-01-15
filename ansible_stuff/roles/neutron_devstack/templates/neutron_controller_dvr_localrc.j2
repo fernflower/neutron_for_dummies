@@ -1,0 +1,20 @@
+LOGFILE=$DEST/logs/stack.sh.log
+
+ADMIN_PASSWORD=secretrabbit
+DATABASE_PASSWORD=$ADMIN_PASSWORD
+RABBIT_PASSWORD=$ADMIN_PASSWORD
+SERVICE_PASSWORD=$ADMIN_PASSWORD
+HOST_IP={{inventory_hostname}}
+#NEUTRON_REPO=https://review.openstack.org/p/openstack/neutron
+#NEUTRON_BRANCH=stable/mitaka
+#FIXED_RANGE=172.31.1.0/24
+#FLOATING_RANGE=192.168.20.0/25
+MULTI_HOST=True
+
+disable_service n-net
+enable_service neutron q-svc q-agt q-dhcp q-l3 q-meta placement-api
+
+# dvr specific settings
+Q_PLUGIN=ml2
+Q_ML2_TENANT_NETWORK_TYPE=vxlan
+Q_DVR_MODE=dvr_snat
