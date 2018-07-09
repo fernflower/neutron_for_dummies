@@ -6,6 +6,12 @@
       - vim
   sudo: yes
 
+- name: delete .vim directory if present
+  file:
+    path: "/home/{{user}}/.vim/"
+    state: absent
+  sudo: yes
+
 - name: clone repo with nice vim config
   git: repo=https://github.com/fernflower/vim-quickstart.git dest="/home/{{user}}/.vim" update=no
 
