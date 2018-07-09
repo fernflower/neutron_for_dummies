@@ -8,7 +8,7 @@ NETWORK="iv-killme-fwaas"
 # our tuned default secgroup already has allow all rules
 SECGROUP="default"
 KEYNAME="ivasilevskaya"
-USER_SCRIPT="fix_resolvconf.sh"
+USER_SCRIPT="fix_resolvconf_install_ansible.sh"
 AVAILABILITY_ZONE="nova"
 NAME_PREFIX="iv-killme"
 FIP_NETWORK="public"
