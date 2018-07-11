@@ -1,5 +1,6 @@
 LOGFILE=$DEST/logs/stack.sh.log
 
+#SERVICE_HOST={{hostvars[inventory_hostname]['internal_service_ip']}}
 ADMIN_PASSWORD=secretrabbit
 DATABASE_PASSWORD=$ADMIN_PASSWORD
 RABBIT_PASSWORD=$ADMIN_PASSWORD
