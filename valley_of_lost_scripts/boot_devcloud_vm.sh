@@ -37,7 +37,7 @@ echo "Booted vm's port on internal network is $vm_port"
 fip="$(openstack floating ip list | awk '$6 == "None" {print $4}' | head -n 1)"
 if ! [[ $fip ]]; then
     echo "No floating ip to use found, creating one.."
-    openstack floating ip create "$FIP_NETWORK" -c floating_ip_address | grep floating_ip_address | awk '{print $4}'
+    fip=$(openstack floating ip create "$FIP_NETWORK" -c floating_ip_address | grep floating_ip_address | awk '{print $4}')
 fi
 echo "Assosiating floating ip $fip with vm $vm_name($vm_port)"
 openstack floating ip set --port "$vm_port" "$fip"

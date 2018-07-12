@@ -6,9 +6,6 @@ if [ -z "$INCLUDED" ]; then
     INT="mydemo"
     SECGROUP="ovsfw_sg"
     ROUTER="demo-router"
-    EXT_POOL="start=172.18.171.86,end=172.18.171.90"
-    EXT_GATEWAY="172.18.171.1"
-    EXT_CIDR="172.18.171.0/25"
     INT_GATEWAY="20.10.0.1"
     INT_CIDR="20.10.0.0/24"
     VM="vm-$RANDOM"
@@ -87,20 +84,27 @@ function create_secgroup_neutron {
 }
 
 function boot_vm_with_floating {
-    # create floating ip
-    ip=$(nova floating-ip-list | grep $EXT | awk '{if ($6 == "-") print $4}' | head -1)
-    if [[ $ip ]] ; then
-        echo "Unassigned floating ip $ip exists, will use it"
-    else
-        nova floating-ip-create
-        ip=$(nova floating-ip-list | grep $EXT | awk '{if ($6 == "-") print $4}')
-        echo "Created floating ip $ip"
+    net_id=$(openstack network show  mydemo -c id | grep 'id' | awk '{print $4}')
+    openstack server create \
+        --flavor 1 \
+        --image "$IMG" \
+        --nic net-id="$net_id" \
+        --security-group "$SECGROUP" \
+        --key-name "$KEY" \
+        --wait \
+        "$VM"
+    # Assign floating ip
+    vm_addr="$(openstack server show "$VM" -c addresses | grep addresses| awk '{print $4}'| sed -e 's/.*=//g')"
+    vm_port="$(openstack port list --network "$INT" | grep "$vm_addr" | awk '{print $2}')"
+    echo "Booted vm's port on internal network is $vm_port"
+    fip="$(openstack floating ip list | awk '$6 == "None" {print $4}' | head -n 1)"
+    if ! [[ $fip ]]; then
+        echo "No floating ip to use found, creating one.."
+        fip=$(openstack floating ip create "$EXT" -c floating_ip_address | grep floating_ip_address | awk '{print $4}')
     fi
-    NET_ID=$(neutron net-list | grep "$INT" | awk '{print $2}')
-    nova boot "$VM" --flavor 2 --image "$IMG" --nic net-name=$INT --security-groups $SECGROUP --key $KEY --poll
-    nova floating-ip-associate $VM $ip
-    echo "VM $VM (security group $SECGROUP) can be accessed by $ip"
-    echo "Done"
+    echo "Assosiating floating ip $fip with vm $vm_name($vm_port)"
+    openstack floating ip set --port "$vm_port" "$fip"
+    echo "VM $VM (security group $SECGROUP) can be accessed by $fip"
 }
 
 add_ubuntu_image
