@@ -3,7 +3,8 @@
 # this file is gitignored for paranoid security reasons
 OPENRC="mcp-networking-openrc.sh"
 FLAVOR="m1.large40"
-IMAGE="iv-killme-devuser-tuned"
+#IMAGE="iv-killme-devuser-tuned"
+IMAGE="iv-killme-trusty-tuned-devuser"
 NETWORK="iv-killme-fwaas"
 # our tuned default secgroup already has allow all rules
 SECGROUP="default"

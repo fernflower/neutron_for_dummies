@@ -1,5 +1,6 @@
 - hosts: devstack_vms
   roles:
+      - contrail_install
       - neutron_devstack
   vars:
     localrc: contrail_localrc
