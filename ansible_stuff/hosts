@@ -1,6 +1,7 @@
 # hosts with single node devstack installation
 [devstack_vms]
-172.18.161.39
+#172.17.52.166 internal_service_ip=172.16.0.11
+172.17.48.41 internal_service_ip=172.16.0.12
 
 # hosts where multinode devstack is deployed
 [nodes:children]
@@ -9,13 +10,13 @@ computes
 network
 
 [controllers]
-172.18.161.49
+172.17.48.144
 
 [computes]
-172.18.161.40
+172.17.49.40
 
 [network]
-172.18.161.38
+#172.18.161.38
 
 [mcp]
 172.18.161.13
