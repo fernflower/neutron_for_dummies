@@ -13,10 +13,13 @@
       - build-essential
       - python2.7
       - language-pack-ru
+      - libsasl2-dev
+      - libnuma-dev
+      - liburcu-dev
   sudo: yes
 
 - name: clone contrail install repo
-  git: repo=https://github.com/Juniper/contrail-installer dest="{{project_dir}}/contrail-installer" update=no version="master"
+  git: repo=https://github.com/fernflower/contrail-installer dest="{{project_dir}}/contrail-installer" update=no version="master"
 
 - name: checkout neutron_for_dummies (just in case)
   git: repo=https://github.com/fernflower/neutron_for_dummies.git dest="{{project_dir}}/neutron_for_dummies" update=no
@@ -29,30 +32,12 @@
     path: "{{project_dir}}/debs"
     state: directory
 
-- name: fetch debs not present in repo
-  get_url:
-    url: "{{item}}"
-    dest: "{{project_dir}}/debs/{{item.split('/')[-1].split('_')[0]}}.deb"
-  with_items:
-    #    - "http://mirror.mirantis.com/2018.3.0/mcp-tools/xenial/pool/extra/libi/libipfix/libipfix_0.8.2%2B1tcp3%2Bxenial1_amd64.deb"
-    #    - "http://mirror.mirantis.com/2018.3.0/mcp-tools/xenial/pool/extra/libi/libipfix/libipfix-dev_0.8.2%2B1tcp3%2Bxenial1_amd64.deb"
-    - "http://mirror.mirantis.com/2018.3.0/mcp-tools/xenial/pool/extra/p/python-sseclient/python-sseclient_0.0.12-0tcp1~xenial1_all.deb"
-    - "http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.18.0/libuv_1.18.0-1_amd64.deb"
-    - "http://downloads.datastax.com/cpp-driver/ubuntu/16.04/dependencies/libuv/v1.18.0/libuv-dev_1.18.0-1_amd64.deb"
-    - "http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.4.1/cassandra-cpp-driver_2.4.1-1_amd64.deb"
-    - "http://downloads.datastax.com/cpp-driver/ubuntu/16.04/cassandra/v2.4.1/cassandra-cpp-driver-dev_2.4.1-1_amd64.deb"
-
-- name: install required debs
-  shell: dpkg -i "{{project_dir}}/debs/{{item}}"
-  sudo: yes
-  with_items:
-    #    - libipfix.deb
-    #    - libipfix-dev.deb
-    #    - python-sseclient.deb
-    - libuv.deb
-    - libuv-dev.deb
-
 - name: build contrail
   shell: bash contrail.sh build
-  args: 
+  args:
+      chdir: "{{project_dir}}/contrail-installer"
+
+- name: install contrail
+  shell: bash contrail.sh install
+  args:
       chdir: "{{project_dir}}/contrail-installer"
