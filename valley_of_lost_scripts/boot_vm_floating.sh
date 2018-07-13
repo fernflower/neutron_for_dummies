@@ -1,8 +1,8 @@
 #!/bin/sh
 if [ -z "$INCLUDED" ]; then
     echo "Setting script-specific variables"
-    OPENRC="/root/openrc"
-    EXT="admin_floating_net"
+    OPENRC="/root/keystonerc"
+    EXT="floating-ips"
     INT="mydemo"
     SECGROUP="ovsfw_sg"
     ROUTER="demo-router"
@@ -15,6 +15,7 @@ if [ -z "$INCLUDED" ]; then
     KEY="testkey"
     PUB_KEY_LOC="~/.ssh/id_rsa.pub"
     IPERF_PORT="9999"
+    FLAVOR="m1.small"
 fi
 
 source $OPENRC admin admin
@@ -86,7 +87,7 @@ function create_secgroup_neutron {
 function boot_vm_with_floating {
     net_id=$(openstack network show  mydemo -c id | grep 'id' | awk '{print $4}')
     openstack server create \
-        --flavor 1 \
+        --flavor "$FLAVOR" \
         --image "$IMG" \
         --nic net-id="$net_id" \
         --security-group "$SECGROUP" \
@@ -102,8 +103,8 @@ function boot_vm_with_floating {
         echo "No floating ip to use found, creating one.."
         fip=$(openstack floating ip create "$EXT" -c floating_ip_address | grep floating_ip_address | awk '{print $4}')
     fi
-    echo "Assosiating floating ip $fip with vm $vm_name($vm_port)"
-    openstack floating ip set --port "$vm_port" "$fip"
+    echo "Assosiating floating ip $fip with vm $VM($vm_port)"
+    openstack server add floating ip "$VM" "$fip"
     echo "VM $VM (security group $SECGROUP) can be accessed by $fip"
 }
 
